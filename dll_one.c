@@ -10,15 +10,16 @@
 static HMODULE hDLL = NULL;
 static IEEE_Cigre_DLLInterface_Instance *ptr_toModel= NULL;
 
-static double timeStep= 0;
-static double timeStepDLL= 0;
-static double nextTimeStepDLL= 0;
+static real64_T timeStep= 0;
+static real64_T timeStepDLL= 0;
+static real64_T nextTimeStepDLL= 0;
+static real64_T TRelease= 0;
 
-static int sizeInputs= 0;
-static int sizeOutputs= 0;
-static int sizeParams= 0; 
+static int32_T sizeInputs= 0;
+static int32_T sizeOutputs= 0;
+static int32_T sizeParams= 0; 
 
-static int *outputsTypes= NULL;
+static int32_T *outputsTypes= NULL;
 static size_t *outputsOffsets= NULL;                                                                                                             // Save the offsets values based on the data type of outputs struct
 // static void *Parameters= NULL;
 
@@ -28,7 +29,7 @@ typedef int32_T ( *CheckParameters )( IEEE_Cigre_DLLInterface_Instance* instance
 typedef int32_T ( *ModelInitialize )( IEEE_Cigre_DLLInterface_Instance* instance ); 
 typedef int32_T ( *ModelOutputs )( IEEE_Cigre_DLLInterface_Instance* instance ); 
 
-void outsix_( char *, int * );
+void outsix_( char *, int32_T * );
 
 
 // Print in  '.LIS' file
@@ -41,7 +42,7 @@ void printLIS_( const char *fmt, ... ) {
   vsprintf( buffer, fmt, args );                                                                          
   va_end( args );
 
-  int len= strlen( buffer );                                                                              
+  int32_T len= strlen( buffer );                                                                              
   outsix_( buffer, &len );                                                                                
 
   // Example:
@@ -64,7 +65,7 @@ void readDllName( char* FileName ) {
 }
 
 // Compute the amount of memory to reserve depending on the data type and number of 'Inputs', 'Outputs', and 'Parameters' the DLL model needs
-void getAlignmentSizeAndOffset( int type, int *alignment, size_t *currentOffset, size_t *offsets, int i ) {
+void getAlignmentSizeAndOffset( int32_T type, int32_T *alignment, size_t *currentOffset, size_t *offsets, int32_T i ) {
 
   switch ( type ) {
     case 6: *alignment= sizeof( int32_T ); break;
@@ -82,7 +83,7 @@ void getAlignmentSizeAndOffset( int type, int *alignment, size_t *currentOffset,
 }
 
 // Create 'Input', 'Output' and 'Parameters' vectors with the data type that the DLL model needs
-void *processModelVector( const char *label, int size, int *types, size_t *offsets, IEEE_Cigre_DLLInterface_Model_Info *modelInfo, double *valuesFromATP ) {
+void *processModelVector( const char *label, int32_T size, int32_T *types, size_t *offsets, IEEE_Cigre_DLLInterface_Model_Info *modelInfo, real64_T *valuesFromATP ) {
 
   const char **names= malloc( size * sizeof( char * ) );
 
@@ -91,25 +92,25 @@ void *processModelVector( const char *label, int size, int *types, size_t *offse
     exit( EXIT_FAILURE );
   }
 
-  int i;
+  int32_T i;
   for ( i= 0; i < size; i++ ) {
 
     if ( strcmp( label, "Inputs" ) == 0 ) {            
       names[i]= ( const char * ) modelInfo -> InputPortsInfo[i].Name;                                                           
-      types[i]= ( int ) modelInfo -> InputPortsInfo[i].DataType;
+      types[i]= ( int32_T ) modelInfo -> InputPortsInfo[i].DataType;
     } else if ( strcmp( label, "Outputs" ) == 0 ) {
       names[i]= ( const char * ) modelInfo -> OutputPortsInfo[i].Name;                                                           
-      types[i]= ( int ) modelInfo -> OutputPortsInfo[i].DataType;
+      types[i]= ( int32_T ) modelInfo -> OutputPortsInfo[i].DataType;
     } else if ( strcmp( label, "Parameters" ) == 0 ) {
       names[i]= ( const char * ) modelInfo -> ParametersInfo[i].Name;                                                            
-      types[i]= ( int ) modelInfo -> ParametersInfo[i].DataType;                
+      types[i]= ( int32_T ) modelInfo -> ParametersInfo[i].DataType;                
     }
 
-    // printLIS_( "%s[%d]= %s, Type= %s\n", label, i, names[i], types[i] == 6 ? "int" : "double" );
+    // printLIS_( "%s[%d]= %s, Type= %s\n", label, i, names[i], types[i] == 6 ? "int32_T" : "real64_T" );
   }
 
   size_t totalSize= 0;
-  int alignment= 0;
+  int32_T alignment= 0;
 
   for ( i= 0; i < size; i++ ) {
     getAlignmentSizeAndOffset( types[i], &alignment, &totalSize, offsets, i );
@@ -139,11 +140,11 @@ void *processModelVector( const char *label, int size, int *types, size_t *offse
   // Print the values
   for ( i= 0; i < size; i++ ) {
     if ( types[i] == 6 ) {
-      int value= *( int * )( ( uint8_t * )( valuesToModel ) + offsets[i] );
-      printLIS_( "%s_M[%d] : %s = %d (int)\n", label, i, names[i], value );
+      int32_T value= *( int32_T * )( ( uint8_t * )( valuesToModel ) + offsets[i] );
+      printLIS_( "%s_M[%d] : %s = %d ( int32_T )\n", label, i, names[i], value );
     } else if ( types[i] == 9 ) {
-      double value= *( double * )( ( uint8_t * )( valuesToModel ) + offsets[i] );
-      printLIS_( "%s_M[%d] : %s = %.4f (double)\n", label, i, names[i], value );
+      real64_T value= *( real64_T * )( ( uint8_t * )( valuesToModel ) + offsets[i] );
+      printLIS_( "%s_M[%d] : %s = %.4f ( real64_T )\n", label, i, names[i], value );
     }
   }
 
@@ -157,7 +158,7 @@ void *processModelVector( const char *label, int size, int *types, size_t *offse
 // Return back the values to ATP in 'double' data type
 void writeValuesToATP( void *valuesFromModel, int *types, size_t *offsets, int size, double *valuesToATP ) { 
 
-  int i;
+  int32_T i;
   for ( i= 0; i < size; i++ ) {
 
     double valueAsDouble;
@@ -168,12 +169,9 @@ void writeValuesToATP( void *valuesFromModel, int *types, size_t *offsets, int s
     } else if ( types[i] == 9 ) { 
       real64_T val= *( real64_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );
       valueAsDouble= ( double ) val;
-    } else {
-      valueAsDouble= 0.007;
     }
 
     valuesToATP[i]= valueAsDouble;
-    // valuesToATP[i]= *( double *)( ( uint8_t * ) valuesFromModel + offsets[i] );
   }
 
 }
@@ -187,9 +185,6 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   printLIS_( "Initializing model 'dll_one_i'" );
   
-
-  int i;
-  double t= xin_ar[0];
 
 
   // Read the external DLL model
@@ -211,14 +206,17 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   sizeOutputs= modelInfo -> NumOutputPorts;
   sizeParams=  modelInfo -> NumParameters;
 
-  int sizeNumIntStates= modelInfo -> NumIntStates;
-  int sizeNumFloatStates= modelInfo -> NumFloatStates;
-  int sizeNumDoubleStates= modelInfo -> NumDoubleStates;
+  int32_T sizeNumIntStates= modelInfo -> NumIntStates;
+  int32_T sizeNumFloatStates= modelInfo -> NumFloatStates;
+  int32_T sizeNumDoubleStates= modelInfo -> NumDoubleStates;
 
-  timeStep= xdata_ar[ sizeParams ];
+  int32_T i;
+  real64_T t= ( real64_T ) xin_ar[ sizeInputs + sizeOutputs ];
+  timeStep= ( real64_T ) xdata_ar[ sizeParams ];
   timeStepDLL= modelInfo -> FixedStepBaseSampleTime;  
-  nextTimeStepDLL= 2 * timeStepDLL;
-  printLIS_( "TimeStep= %f - TimeStepDLL= %f\n", timeStep, timeStepDLL );
+  nextTimeStepDLL= 0;
+  TRelease= ( real64_T ) xdata_ar[ sizeParams + 1 ];
+  printLIS_( "Time= %f - TimeStep= %f - TimeStepDLL= %f- TRelease= %f\n", t, timeStep, timeStepDLL, TRelease );
 
 
   printLIS_( "N Inputs= %d\n", sizeInputs );
@@ -237,7 +235,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   // IEEE_Cigre_DLLInterface_Signal - Inputs
   printLIS_( "Model Inputs: \n" );  
   
-  int *inputsTypes= malloc( sizeInputs * sizeof( int ) );  
+  int32_T *inputsTypes= malloc( sizeInputs * sizeof( int32_T ) );  
   size_t *inputsOffsets= malloc( sizeInputs * sizeof( size_t ) );
   void *InputSignals= processModelVector( "Inputs", sizeInputs, inputsTypes, inputsOffsets, modelInfo, xin_ar );
 
@@ -250,7 +248,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   // IEEE_Cigre_DLLInterface_Parameter
   printLIS_( "Model Parameters: \n" );
 
-  int *paramsTypes= malloc( sizeParams * sizeof( int ) );  
+  int32_T *paramsTypes= malloc( sizeParams * sizeof( int ) );  
   size_t *paramsOffsets= malloc( sizeParams * sizeof( size_t ) );
   void *Parameters= processModelVector( "Parameters", sizeParams, paramsTypes, paramsOffsets, modelInfo, xdata_ar );
 
@@ -372,44 +370,76 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
 void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double xvar_ar[] ) {  
 
-  int i;
-  double t=  xin_ar[ sizeInputs + sizeOutputs ];
+  int32_T i;
+  real64_T t= ( real64_T ) xin_ar[ sizeInputs + sizeOutputs ];                          // Simulation Time
+  ptr_toModel->Time= t;
 
   if ( t >= nextTimeStepDLL ) {
 
-    // Update the instance at each simulation time
-    ptr_toModel->Time= t;
+    if ( TRelease && t <= TRelease) {
 
-    for ( i= 0; i < sizeInputs; ++i ) {
-      ( ( double * ) ptr_toModel->ExternalInputs)[i]= xin_ar[i];
-      // printLIS_( "toModel->ExternalInputs[%i]= %f\n", i, ( ( double * ) ptr_toModel->ExternalInputs )[i] );
-    }
-
-    ModelOutputs modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
-    if ( modelOutputs == NULL ) {
-      printLIS_( "Cannot locate 'modelOutputs' function in dll\n" );
-      exit( EXIT_FAILURE );
-    }
-
-    int32_T modelOut= modelOutputs( ptr_toModel );
-    // printLIS_( "ModelOutputs: %i\n", modelOut );
+      printLIS_( "NextTimeStepDLL= %f\n", nextTimeStepDLL ); 
 
 
-    // Return the model's outputs values to ATP
-    writeValuesToATP( ptr_toModel->ExternalOutputs, outputsTypes, outputsOffsets, sizeOutputs, xout_ar );
+      // Update the instance at each 'nextTimeStepDLL'      
+      for ( i= 0; i < sizeInputs; ++i ) {
+        ( ( real64_T * ) ptr_toModel->ExternalInputs)[i]= ( real64_T ) xin_ar[i];
+        // printLIS_( "toModel->ExternalInputs[%i]= %f\n", i, ( ( real64_T * ) ptr_toModel->ExternalInputs )[i] );
+      }
 
-    
+
+      ModelInitialize modelInitialize= ( ModelInitialize ) GetProcAddress( hDLL, "Model_Initialize" );
+      if ( modelInitialize == NULL ) {
+        printLIS_( "Cannot locate Model_Initialize function in dll\n" );
+        exit( EXIT_FAILURE );
+      }  
+
+      int32_T modelInit= modelInitialize( ptr_toModel );
+
+
+      ModelOutputs modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
+      if ( modelOutputs == NULL ) {
+        printLIS_( "Cannot locate 'modelOutputs' function in dll\n" );
+        exit( EXIT_FAILURE );
+      }
+
+      int32_T modelOut= modelOutputs( ptr_toModel );
+
+
+    } else {        
+
+      // Update the instance at each 'nextTimeStepDLL'      
+      for ( i= 0; i < sizeInputs; ++i ) {
+        ( ( real64_T * ) ptr_toModel->ExternalInputs)[i]= ( real64_T ) xin_ar[i];
+        // printLIS_( "toModel->ExternalInputs[%i]= %f\n", i, ( ( real64_T * ) ptr_toModel->ExternalInputs )[i] );
+      }
+
+      ModelOutputs modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
+      if ( modelOutputs == NULL ) {
+        printLIS_( "Cannot locate 'modelOutputs' function in dll\n" );
+        exit( EXIT_FAILURE );
+      }
+
+      int32_T modelOut= modelOutputs( ptr_toModel );
+      // printLIS_( "ModelOutputs: %i\n", modelOut );
+
+
+      // Return the model's outputs values to ATP
+      writeValuesToATP( ptr_toModel->ExternalOutputs, outputsTypes, outputsOffsets, sizeOutputs, xout_ar );
+
+    }  
+      
     // printLIS_( "NextTimeStepDLL= %f\n", nextTimeStepDLL );
     nextTimeStepDLL += timeStepDLL;
     
+
     
   }
 
-  // printLIS_( "TimeStep= %f\n", t );
+  // printLIS_( "SimulationTime= %f\n", t );
   // printLIS_( "X_out= %f\n", xout_ar[0] );
 
-  // printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
-
+ 
 
 
 }
