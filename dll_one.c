@@ -7,8 +7,10 @@
 
 
 #define MAXL 256
+
 static HMODULE hDLL = NULL;
 static IEEE_Cigre_DLLInterface_Instance *ptr_toModel= NULL;
+static FILE *pFile= NULL;
 
 static real64_T timeStep= 0;
 static real64_T timeStepDLL= 0;
@@ -25,12 +27,23 @@ static size_t *outputsOffsets= NULL;                                            
 
 typedef int32_T ( *PrintInfo )( void ); 
 typedef IEEE_Cigre_DLLInterface_Model_Info* ( *GetInfo )( void );
+typedef int32_T ( *ModelFirstCall )( IEEE_Cigre_DLLInterface_Instance* instance );
 typedef int32_T ( *CheckParameters )( IEEE_Cigre_DLLInterface_Instance* instance ); 
 typedef int32_T ( *ModelInitialize )( IEEE_Cigre_DLLInterface_Instance* instance ); 
 typedef int32_T ( *ModelOutputs )( IEEE_Cigre_DLLInterface_Instance* instance ); 
 
-void outsix_( char *, int32_T * );
 
+#define LOAD_DLL_FUNCTION( funcPtr, dllHandle, name, type, ptr_toModel ) \
+  funcPtr= ( type ) GetProcAddress( dllHandle, name);                           \
+  if ( !funcPtr ) {                                                           \
+    printLIS_( "Optional function '%s' not found in DLL. Skipping.\n", name ); \
+  } else {                                                                    \
+    funcPtr( ptr_toModel );                                                  \
+  }
+
+
+
+void outsix_( char *, int32_T * );
 
 // Print in  '.LIS' file
 void printLIS_( const char *fmt, ... ) {
@@ -51,9 +64,6 @@ void printLIS_( const char *fmt, ... ) {
 
 // Read the external dll model
 void readDllName( char* FileName ) {
-
-  // Removing the final newline character if present
-  // FileName[ strcspn( FileName, "\n" ) ]= '\0';
 
   if ( hDLL == NULL ) {
     hDLL= LoadLibrary( FileName );
@@ -185,10 +195,28 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   printLIS_( "Initializing model 'dll_one_i'" );
   
+  
+  pFile= fopen( "C:/Users/JOSMON~1/Desktop/dll_list.txt", "r" );
+  char buf_dll[128]= { 0 };
 
 
+  if ( pFile != NULL && fgets( buf_dll, sizeof( buf_dll ), pFile ) != NULL ) {
+    buf_dll[ strcspn( buf_dll, "\r\n" ) ]= '\0';
+  } else {
+    printLIS_( "Could not read from file\n" );
+    fclose( pFile );
+    exit( EXIT_FAILURE );
+  }
+
+  fclose( pFile );
+
+  printLIS_( "Archivo txt= %s\n", buf_dll );
+
+
+  
   // Read the external DLL model
-  readDllName( "scm_32" );       // realCodeExample     scm_32       SCRX_Photon
+  readDllName( buf_dll );
+  // readDllName( "realCodeExample" );                                         // realCodeExample     scm_32       SCRX_Photon
 
 
   // GetInfo function
@@ -197,7 +225,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   if ( getInfo == NULL ) {
     printLIS_( "Cannot locate Model_GetInfo function in dll\n" );
     exit( EXIT_FAILURE );
-  }
+  } 
 
   IEEE_Cigre_DLLInterface_Model_Info *modelInfo= getInfo();
   printLIS_( "Model Inputs: \n Name= %s\n", modelInfo -> ModelName );
@@ -321,22 +349,46 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   
   printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
 
+  
+  ModelFirstCall modelFirstCall;
+  LOAD_DLL_FUNCTION( modelFirstCall, hDLL, "Model_FirstCall", ModelFirstCall, ptr_toModel );
+
+  // ModelFirstCall modelFirstCall= ( ModelFirstCall  ) GetProcAddress( hDLL, "Model_FirstCall" );
+  // if ( modelFirstCall == NULL ) {
+  //   printLIS_( "Cannot locate Model_FirstCall function in dll\n" );
+  //   // exit( EXIT_FAILURE );
+  // } else {
+  //   int32_T firstCall= modelFirstCall( ptr_toModel );
+  //   printLIS_( "FirstCall: %i\n", firstCall );
+  // }
 
 
+  
+  printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
+
+
+
+  // CheckParameters checkParams;
+  // LOAD_DLL_FUNCTION( checkParams, hDLL, "Model_CheckParameters", CheckParameters, ptr_toModel );
+
+  int32_T checkParams;
   CheckParameters checkParameters= ( CheckParameters ) GetProcAddress( hDLL, "Model_CheckParameters" );
   if ( checkParameters == NULL ) {
     printLIS_( "Cannot locate Model_CheckParameters function in dll\n" );
     exit( EXIT_FAILURE );
+  } else {
+    checkParams= checkParameters( ptr_toModel );
+    printLIS_( "CheckParams: %i\n", checkParams );
   }
-
-  int32_T checkParams= checkParameters( ptr_toModel );
-  printLIS_( "CheckParams: %i\n", checkParams );
 
 
 
   printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
 
 
+
+  // ModelInitialize modelInitialize;
+  // LOAD_DLL_FUNCTION( modelInitialize, hDLL, "Model_Initialize", ModelInitialize, ptr_toModel );
 
   ModelInitialize modelInitialize= ( ModelInitialize ) GetProcAddress( hDLL, "Model_Initialize" );
   if ( modelInitialize == NULL ) {
@@ -378,9 +430,6 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
     if ( TRelease && t <= TRelease) {
 
-      printLIS_( "NextTimeStepDLL= %f\n", nextTimeStepDLL ); 
-
-
       // Update the instance at each 'nextTimeStepDLL'      
       for ( i= 0; i < sizeInputs; ++i ) {
         ( ( real64_T * ) ptr_toModel->ExternalInputs)[i]= ( real64_T ) xin_ar[i];
@@ -421,7 +470,7 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
       }
 
       int32_T modelOut= modelOutputs( ptr_toModel );
-      // printLIS_( "ModelOutputs: %i\n", modelOut );
+      printLIS_( "ModelOutputs: %i\n", modelOut );
 
 
       // Return the model's outputs values to ATP
