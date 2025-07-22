@@ -21,9 +21,10 @@ static int32_T sizeInputs= 0;
 static int32_T sizeOutputs= 0;
 static int32_T sizeParams= 0; 
 
+static int32_T *inputsTypes= NULL;  
+static size_t *inputsOffsets= NULL;
 static int32_T *outputsTypes= NULL;
-static size_t *outputsOffsets= NULL;                                                                                                             // Save the offsets values based on the data type of outputs struct
-// static void *Parameters= NULL;
+static size_t *outputsOffsets= NULL; 
 
 typedef int32_T ( *PrintInfo )( void ); 
 typedef IEEE_Cigre_DLLInterface_Model_Info* ( *GetInfo )( void );
@@ -31,15 +32,8 @@ typedef int32_T ( *ModelFirstCall )( IEEE_Cigre_DLLInterface_Instance* instance 
 typedef int32_T ( *CheckParameters )( IEEE_Cigre_DLLInterface_Instance* instance ); 
 typedef int32_T ( *ModelInitialize )( IEEE_Cigre_DLLInterface_Instance* instance ); 
 typedef int32_T ( *ModelOutputs )( IEEE_Cigre_DLLInterface_Instance* instance ); 
-
-
-#define LOAD_DLL_FUNCTION( funcPtr, dllHandle, name, type, ptr_toModel ) \
-  funcPtr= ( type ) GetProcAddress( dllHandle, name);                           \
-  if ( !funcPtr ) {                                                           \
-    printLIS_( "Optional function '%s' not found in DLL. Skipping.\n", name ); \
-  } else {                                                                    \
-    funcPtr( ptr_toModel );                                                  \
-  }
+static ModelOutputs modelOutputs;
+static ModelInitialize modelInitialize;
 
 
 
@@ -78,8 +72,8 @@ void readDllName( char* FileName ) {
 void getAlignmentSizeAndOffset( int32_T type, int32_T *alignment, size_t *currentOffset, size_t *offsets, int32_T i ) {
 
   switch ( type ) {
-    case 6: *alignment= sizeof( int32_T ); break;
-    case 9: *alignment= sizeof( real64_T ); break;
+    case IEEE_Cigre_DLLInterface_DataType_int32_T: *alignment= sizeof( int32_T ); break;
+    case IEEE_Cigre_DLLInterface_DataType_real64_T: *alignment= sizeof( real64_T ); break;
     // default: *alignment= 1; break;
   }
 
@@ -92,12 +86,32 @@ void getAlignmentSizeAndOffset( int32_T type, int32_T *alignment, size_t *curren
 
 }
 
+// Assign the data type to a vector based on a structure coming from the dll model
+void *changeDataType( double *valuesFromATP, int *types, size_t *offsets, int size, double *valuesToModel ) { 
+
+  int32_T i;
+
+  // Write the values into 'valuesToModel':
+  for ( i= 0; i < size; i++ ) {
+
+    if ( types[i] == IEEE_Cigre_DLLInterface_DataType_int32_T ) {
+      int32_T val= ( int32_T )( valuesFromATP[i] );                                                                                             // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+      *( ( int32_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                        // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( int32_T ) );
+    } else if ( types[i] == IEEE_Cigre_DLLInterface_DataType_real64_T ) {
+      real64_T val= ( real64_T )( valuesFromATP[i] );
+      *( ( real64_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                       // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( real64_T ) );
+    }
+
+  }
+
+}
+
 // Create 'Input', 'Output' and 'Parameters' vectors with the data type that the DLL model needs
 void *processModelVector( const char *label, int32_T size, int32_T *types, size_t *offsets, IEEE_Cigre_DLLInterface_Model_Info *modelInfo, real64_T *valuesFromATP ) {
 
   const char **names= malloc( size * sizeof( char * ) );
 
-  if ( !names || !types || !offsets ) {
+  if ( !names ) {
     fprintf( stderr, "Memory allocation failed in processModelVector for %s\n", label );
     exit( EXIT_FAILURE );
   }
@@ -134,25 +148,15 @@ void *processModelVector( const char *label, int32_T size, int32_T *types, size_
   }
 
   // Write the values into 'valuesToModel':
-  for ( i= 0; i < size; i++ ) {
-
-    if ( types[i] == 6 ) {
-      int32_T val= ( int32_T )( valuesFromATP[i] );                                                                                             // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
-      *( ( int32_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                        // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( int32_T ) );
-    } else if ( types[i] == 9 ) {
-      real64_T val= ( real64_T )( valuesFromATP[i] );
-      *( ( real64_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                       // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( real64_T ) );
-    }
-
-  }    
+  changeDataType( valuesFromATP, types, offsets, size, valuesToModel );
 
 
   // Print the values
   for ( i= 0; i < size; i++ ) {
-    if ( types[i] == 6 ) {
+    if ( types[i] == IEEE_Cigre_DLLInterface_DataType_int32_T ) {
       int32_T value= *( int32_T * )( ( uint8_t * )( valuesToModel ) + offsets[i] );
       printLIS_( "%s_M[%d] : %s = %d ( int32_T )\n", label, i, names[i], value );
-    } else if ( types[i] == 9 ) {
+    } else if ( types[i] == IEEE_Cigre_DLLInterface_DataType_real64_T ) {
       real64_T value= *( real64_T * )( ( uint8_t * )( valuesToModel ) + offsets[i] );
       printLIS_( "%s_M[%d] : %s = %.4f ( real64_T )\n", label, i, names[i], value );
     }
@@ -256,20 +260,20 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   
 
 
-  printLIS_( "_____________________________________________________________\n\n" );
+  // ___________________________________________________________________
 
 
 
   // IEEE_Cigre_DLLInterface_Signal - Inputs
   printLIS_( "Model Inputs: \n" );  
   
-  int32_T *inputsTypes= malloc( sizeInputs * sizeof( int32_T ) );  
-  size_t *inputsOffsets= malloc( sizeInputs * sizeof( size_t ) );
+  inputsTypes= malloc( sizeInputs * sizeof( int32_T ) );  
+  inputsOffsets= malloc( sizeInputs * sizeof( size_t ) );
   void *InputSignals= processModelVector( "Inputs", sizeInputs, inputsTypes, inputsOffsets, modelInfo, xin_ar );
 
 
 
-  printLIS_( "_____________________________________________________________\n\n" );
+  // ___________________________________________________________________
 
 
 
@@ -282,7 +286,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   
   
-  printLIS_( "_____________________________________________________________\n\n" );
+  // ___________________________________________________________________
   
 
 
@@ -302,28 +306,10 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
 
 
-  printLIS_( "_____________________________________________________________\n\n" );
-
-
-
-  int32_T *intStates= malloc( sizeNumIntStates * sizeof( int32_T ) );
-  for ( i= 0; i < sizeNumIntStates; ++i ) {
-    intStates[i]= 0;
-  }
-
-  real32_T *floatStates= malloc( sizeNumFloatStates * sizeof( real32_T ) );
-  for ( i= 0; i < sizeNumFloatStates; ++i ) {
-    floatStates[i]= 0;
-  }
-
-  real64_T *doubleStates= malloc( sizeNumDoubleStates * sizeof( real64_T ) );
-  for ( i= 0; i < sizeNumDoubleStates; ++i ) {
-    doubleStates[i]= 0;
-  }
 
 
   
-  printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
+  // _________________________________________________________________________________________________________________________________
 
 
 
@@ -335,41 +321,38 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
     exit( EXIT_FAILURE );
   }
 
-  ptr_toModel->ExternalInputs= InputSignals;                    // InputSignals
-  ptr_toModel->ExternalOutputs= OutputSignals;                  // OutputSignals
-  ptr_toModel->Parameters= Parameters;                          // Parameters
-  ptr_toModel->Time= t;
-  // ptr_toModel->SimTool_EMT_RMS_Mode= 1;
-  ptr_toModel->LastErrorMessage= "LastErrorMessage";       
-  ptr_toModel->LastGeneralMessage= "LastGeneralMessage";     
-  ptr_toModel->IntStates= intStates;              
-  ptr_toModel->FloatStates= floatStates;            
-  ptr_toModel->DoubleStates= doubleStates;
+  ptr_toModel -> ExternalInputs= InputSignals;                    // InputSignals
+  ptr_toModel -> ExternalOutputs= OutputSignals;                  // OutputSignals
+  ptr_toModel -> Parameters= Parameters;                          // Parameters
+  ptr_toModel -> Time= t;
+  // ptr_toModel -> SimTool_EMT_RMS_Mode= 1;
+  ptr_toModel -> LastErrorMessage= "LastErrorMessage";       
+  ptr_toModel -> LastGeneralMessage= "LastGeneralMessage";     
+
+  ptr_toModel -> IntStates= ( sizeNumIntStates > 0 ) ? ( int32_T *) xvar_ar : NULL;   
+  ptr_toModel -> FloatStates= ( sizeNumFloatStates > 0 ) ? ( real32_T *) xvar_ar + sizeNumIntStates : NULL;  
+  ptr_toModel -> DoubleStates= ( sizeNumDoubleStates > 0 ) ? ( real64_T *) xvar_ar + sizeNumIntStates + sizeNumFloatStates : NULL;
+  
+  
+
 
   
   printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
 
   
-  ModelFirstCall modelFirstCall;
-  LOAD_DLL_FUNCTION( modelFirstCall, hDLL, "Model_FirstCall", ModelFirstCall, ptr_toModel );
-
-  // ModelFirstCall modelFirstCall= ( ModelFirstCall  ) GetProcAddress( hDLL, "Model_FirstCall" );
-  // if ( modelFirstCall == NULL ) {
-  //   printLIS_( "Cannot locate Model_FirstCall function in dll\n" );
-  //   // exit( EXIT_FAILURE );
-  // } else {
-  //   int32_T firstCall= modelFirstCall( ptr_toModel );
-  //   printLIS_( "FirstCall: %i\n", firstCall );
-  // }
-
+  int32_T firstCall;
+  ModelFirstCall modelFirstCall= ( ModelFirstCall ) GetProcAddress( hDLL, "Model_FirstCall" );
+  if ( modelFirstCall != NULL ) {
+    firstCall= modelFirstCall( ptr_toModel );
+    printLIS_( "FirstCall: %i\n", firstCall );
+  // } else {    
+  //   printLIS_( "FirstCall doesn't exist!\n" );
+  //   return;
+  }
 
   
-  printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
+  // _________________________________________________________________________________________________________________________________
 
-
-
-  // CheckParameters checkParams;
-  // LOAD_DLL_FUNCTION( checkParams, hDLL, "Model_CheckParameters", CheckParameters, ptr_toModel );
 
   int32_T checkParams;
   CheckParameters checkParameters= ( CheckParameters ) GetProcAddress( hDLL, "Model_CheckParameters" );
@@ -382,39 +365,31 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   }
 
 
-
-  printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
-
+  // _________________________________________________________________________________________________________________________________
 
 
-  // ModelInitialize modelInitialize;
-  // LOAD_DLL_FUNCTION( modelInitialize, hDLL, "Model_Initialize", ModelInitialize, ptr_toModel );
 
-  ModelInitialize modelInitialize= ( ModelInitialize ) GetProcAddress( hDLL, "Model_Initialize" );
+  modelInitialize= ( ModelInitialize ) GetProcAddress( hDLL, "Model_Initialize" );
   if ( modelInitialize == NULL ) {
     printLIS_( "Cannot locate Model_Initialize function in dll\n" );
     exit( EXIT_FAILURE );
   }  
 
+
+  modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
+  if ( modelOutputs == NULL ) {
+    printLIS_( "Cannot locate 'modelOutputs' function in dll\n" );
+    exit( EXIT_FAILURE );
+  }
+
+
+  // _________________________________________________________________________________________________________________________________
+
+
+
   int32_T modelInit= modelInitialize( ptr_toModel );
   printLIS_( "ModelInit: %i\n", modelInit );        
-
-
-
-
-
-
-  // free( InputSignals );
-  // free( OutputSignals );
-  // free( Parameters );
-
-  // free( ptr_toModel );0.005628954
-
-
-
-  // Close the dll
-  // FreeLibrary(hDLL);
-      
+  
     
 }
 
@@ -428,29 +403,12 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   if ( t >= nextTimeStepDLL ) {
 
-    if ( TRelease && t <= TRelease) {
+    if ( TRelease > 0 && t <= TRelease) {      
 
-      // Update the instance at each 'nextTimeStepDLL'      
-      for ( i= 0; i < sizeInputs; ++i ) {
-        ( ( real64_T * ) ptr_toModel->ExternalInputs)[i]= ( real64_T ) xin_ar[i];
-        // printLIS_( "toModel->ExternalInputs[%i]= %f\n", i, ( ( real64_T * ) ptr_toModel->ExternalInputs )[i] );
-      }
-
-
-      ModelInitialize modelInitialize= ( ModelInitialize ) GetProcAddress( hDLL, "Model_Initialize" );
-      if ( modelInitialize == NULL ) {
-        printLIS_( "Cannot locate Model_Initialize function in dll\n" );
-        exit( EXIT_FAILURE );
-      }  
+      // Update the instance at each 'nextTimeStepDLL'
+      changeDataType( xin_ar, inputsTypes, inputsOffsets, sizeInputs, ptr_toModel -> ExternalInputs );
 
       int32_T modelInit= modelInitialize( ptr_toModel );
-
-
-      ModelOutputs modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
-      if ( modelOutputs == NULL ) {
-        printLIS_( "Cannot locate 'modelOutputs' function in dll\n" );
-        exit( EXIT_FAILURE );
-      }
 
       int32_T modelOut= modelOutputs( ptr_toModel );
 
@@ -458,20 +416,10 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
     } else {        
 
       // Update the instance at each 'nextTimeStepDLL'      
-      for ( i= 0; i < sizeInputs; ++i ) {
-        ( ( real64_T * ) ptr_toModel->ExternalInputs)[i]= ( real64_T ) xin_ar[i];
-        // printLIS_( "toModel->ExternalInputs[%i]= %f\n", i, ( ( real64_T * ) ptr_toModel->ExternalInputs )[i] );
-      }
-
-      ModelOutputs modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
-      if ( modelOutputs == NULL ) {
-        printLIS_( "Cannot locate 'modelOutputs' function in dll\n" );
-        exit( EXIT_FAILURE );
-      }
+      changeDataType( xin_ar, inputsTypes, inputsOffsets, sizeInputs, ptr_toModel -> ExternalInputs );
 
       int32_T modelOut= modelOutputs( ptr_toModel );
-      printLIS_( "ModelOutputs: %i\n", modelOut );
-
+      // printLIS_( "ModelOutputs: %i\n", modelOut );
 
       // Return the model's outputs values to ATP
       writeValuesToATP( ptr_toModel->ExternalOutputs, outputsTypes, outputsOffsets, sizeOutputs, xout_ar );
@@ -480,15 +428,10 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
       
     // printLIS_( "NextTimeStepDLL= %f\n", nextTimeStepDLL );
     nextTimeStepDLL += timeStepDLL;
-    
 
-    
   }
 
   // printLIS_( "SimulationTime= %f\n", t );
   // printLIS_( "X_out= %f\n", xout_ar[0] );
-
- 
-
 
 }
