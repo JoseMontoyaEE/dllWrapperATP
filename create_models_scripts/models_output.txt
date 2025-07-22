@@ -1,0 +1,47 @@
+MODELS SCRX9
+  DATA
+    TAdTB, TB, K, TE, EMin, EMax, CSwitch, RCdRFD
+    TRelease {DFLT:0}
+
+  INPUT
+    VRef, Ec, Vs, IFD, VT, VUEL, VOEL
+    EFD_0
+
+  OUTPUT
+    EFD
+
+  VAR
+    EFD
+    inputsFromATP[1..7], paramsFromATP[1..8], outputsInit
+
+  INIT
+    EFD:= EFD_0 
+    inputsFromATP[1..7]:= [ VRef, Ec, Vs, IFD, VT, VUEL, VOEL ]
+    paramsFromATP[1..8]:= [ TAdTB, TB, K, TE, EMin, EMax, CSwitch, RCdRFD ]
+    outputsInit:= EFD_0
+
+  ENDINIT
+
+  MODEL SCRX9_dll FOREIGN dll_one { ixdata: 10, ixin: 9, ixout: 1, ixvar: 0 }
+
+  EXEC
+
+    inputsFromATP[1..7]:= [ VRef, Ec, Vs, IFD, VT, VUEL, VOEL ]
+    outputsInit:= EFD_0
+
+    USE SCRX9_dll AS SCRX9_dll
+
+      DATA
+        xdata[1..10]:= [ paramsFromATP[1..8], timestep, TRelease ]
+
+      INPUT
+        xin[1..9]:= [ inputsFromATP[1..7], outputsInit, t ]
+
+      OUTPUT
+        EFD:= xout
+
+    ENDUSE
+
+  ENDEXEC
+
+ENDMODEL
