@@ -70,8 +70,16 @@ void readDllName( char* FileName ) {
 void getAlignmentSizeAndOffset( int32_T type, int32_T *alignment, size_t *currentOffset, size_t *offsets, int32_T i ) {
 
   switch ( type ) {
+    case IEEE_Cigre_DLLInterface_DataType_char_T: *alignment= sizeof( char_T ); break;
+    case IEEE_Cigre_DLLInterface_DataType_int8_T: *alignment= sizeof( int8_T ); break;
+    case IEEE_Cigre_DLLInterface_DataType_uint8_T: *alignment= sizeof( uint8_T ); break;
+    case IEEE_Cigre_DLLInterface_DataType_int16_T: *alignment= sizeof( int16_T ); break;
+    case IEEE_Cigre_DLLInterface_DataType_uint16_T: *alignment= sizeof( uint16_T ); break;
     case IEEE_Cigre_DLLInterface_DataType_int32_T: *alignment= sizeof( int32_T ); break;
+    case IEEE_Cigre_DLLInterface_DataType_uint32_T: *alignment= sizeof( uint32_T ); break;
+    case IEEE_Cigre_DLLInterface_DataType_real32_T: *alignment= sizeof( real32_T ); break;
     case IEEE_Cigre_DLLInterface_DataType_real64_T: *alignment= sizeof( real64_T ); break;
+    case IEEE_Cigre_DLLInterface_DataType_c_string_T: *alignment= sizeof( '\0' ); break;
   }
 
   size_t remainder= *currentOffset % *alignment;
@@ -91,25 +99,62 @@ void changeDataType( double *valuesFromATP, int *types, size_t *offsets, int siz
   // Write the values into 'valuesToModel':
   for ( i= 0; i < size; i++ ) {
 
-    // if ( types[i] == IEEE_Cigre_DLLInterface_DataType_int32_T ) {
-    //   int32_T val= ( int32_T )( valuesFromATP[i] );                                                                                             // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
-    //   *( ( int32_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                        // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( int32_T ) );
-    // } else if ( types[i] == IEEE_Cigre_DLLInterface_DataType_real64_T ) {
-    //   real64_T val= ( real64_T )( valuesFromATP[i] );
-    //   *( ( real64_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                       // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( real64_T ) );
-    // }
-
     switch ( types[i] ) {
-      case IEEE_Cigre_DLLInterface_DataType_int32_T: {
-        int32_T val= ( int32_T )( valuesFromATP[i] );                                                                                             // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
-        *( ( int32_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;
+
+      case IEEE_Cigre_DLLInterface_DataType_char_T: {
+        char_T val= ( char_T )( valuesFromATP[i] );                                                                                             
+        *( ( char_T* )( ( uint8_T* ) valuesToModel + offsets[i] ) )= val;
         break;
       }
+
+      case IEEE_Cigre_DLLInterface_DataType_int8_T: {
+        int8_T val= ( int8_T )( valuesFromATP[i] );                                                                                             
+        *( ( int8_T* )( ( uint8_T* ) valuesToModel + offsets[i] ) )= val;
+        break;
+      }
+      
+      case IEEE_Cigre_DLLInterface_DataType_uint8_T: {
+        uint8_T val= ( uint8_T )( valuesFromATP[i] );                                                                                             
+        *( ( uint8_T* )( ( uint8_T* ) valuesToModel + offsets[i] ) )= val;
+        break;
+      }
+
+      case IEEE_Cigre_DLLInterface_DataType_int16_T: {
+        int16_T val= ( int16_T )( valuesFromATP[i] );                                                                                             
+        *( ( int16_T* )( ( uint8_T* ) valuesToModel + offsets[i] ) )= val;
+        break;
+      }
+
+      case IEEE_Cigre_DLLInterface_DataType_uint16_T: {
+        uint16_T val= ( uint16_T )( valuesFromATP[i] );                                                                                             
+        *( ( uint16_T* )( ( uint8_T* ) valuesToModel + offsets[i] ) )= val;
+        break;
+      }
+
+      case IEEE_Cigre_DLLInterface_DataType_int32_T: {
+        int32_T val= ( int32_T )( valuesFromATP[i] );                                                                                             
+        *( ( int32_T* )( ( uint8_T* ) valuesToModel + offsets[i] ) )= val;
+        break;
+      }
+
+      case IEEE_Cigre_DLLInterface_DataType_uint32_T: {
+        uint32_T val= ( uint32_T )( valuesFromATP[i] );                                                                                             
+        *( ( uint32_T* )( ( uint8_T* ) valuesToModel + offsets[i] ) )= val;
+        break;
+      }
+
+      case IEEE_Cigre_DLLInterface_DataType_real32_T: {
+        real32_T val= ( real32_T )( valuesFromATP[i] );                                                                                             
+        *( ( real32_T* )( ( uint8_T* ) valuesToModel + offsets[i] ) )= val;
+        break;
+      }
+
       case IEEE_Cigre_DLLInterface_DataType_real64_T: {
         real64_T val= ( real64_T )( valuesFromATP[i] );
-        *( ( real64_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;
+        *( ( real64_T* )( ( uint8_T* ) valuesToModel + offsets[i] ) )= val;                                                                         // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( real64_T ) );
         break;
       }
+
     }
 
   }
@@ -188,26 +233,63 @@ void writeValuesToATP( void *valuesFromModel, int *types, size_t *offsets, int s
   for ( i= 0; i < size; i++ ) {
 
     double valueAsDouble;
-    
-    // if ( types[i] == 6 )  {  
-    //   int32_T val= *( int32_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );
-    //   valueAsDouble= ( double ) val;
-    // } else if ( types[i] == 9 ) { 
-    //   real64_T val= *( real64_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );
-    //   valueAsDouble= ( double ) val;
-    // }
 
     switch ( types[i] ) {
+
+      case IEEE_Cigre_DLLInterface_DataType_char_T: {
+        char_T val= *( char_T * )( ( uint8_T * ) valuesFromModel + offsets[i] );                                                                                            // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        valueAsDouble= ( double ) val;
+        break;
+      }
+
+      case IEEE_Cigre_DLLInterface_DataType_int8_T: {
+        int8_T val= *( int8_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );                                                                                            // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        valueAsDouble= ( double ) val;
+        break;
+      }
+      
+      case IEEE_Cigre_DLLInterface_DataType_uint8_T: {
+        uint8_T val= *( uint8_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );                                                                                            // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        valueAsDouble= ( double ) val;
+        break;
+      }
+
+      case IEEE_Cigre_DLLInterface_DataType_int16_T: {
+        int16_T val= *( int16_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );                                                                                            // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        valueAsDouble= ( double ) val;
+        break;
+      }
+
+      case IEEE_Cigre_DLLInterface_DataType_uint16_T: {
+        uint16_T val= *( uint16_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );                                                                                            // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        valueAsDouble= ( double ) val;
+        break;
+      }
+
       case IEEE_Cigre_DLLInterface_DataType_int32_T: {
-        int32_T val= *( int32_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );                                                                                             // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        int32_T val= *( int32_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );                                                                                         // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
         valueAsDouble= ( double ) val;
         break;
       }
+      
+      case IEEE_Cigre_DLLInterface_DataType_uint32_T: {
+        uint32_T val= *( uint32_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );                                                                                            // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        valueAsDouble= ( double ) val;
+        break;
+      }
+
+      case IEEE_Cigre_DLLInterface_DataType_real32_T: {
+        real32_T val= *( real32_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );                                                                                            // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        valueAsDouble= ( double ) val;
+        break;
+      }
+
       case IEEE_Cigre_DLLInterface_DataType_real64_T: {
-        real64_T val= *( real64_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );
+        real64_T val= *( real64_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );    
         valueAsDouble= ( double ) val;
         break;
       }
+
     }
 
     valuesToATP[i]= valueAsDouble;
@@ -244,8 +326,8 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   
   // Read the external DLL model
-  readDllName( buf_dll );
-  // readDllName( "realCodeExample" );                                         // realCodeExample     scm_32       SCRX_Photon
+  // readDllName( buf_dll );
+  readDllName( "scm_32" );                                         // realCodeExample     scm_32       SCRX_Photon
 
 
   // GetInfo function
