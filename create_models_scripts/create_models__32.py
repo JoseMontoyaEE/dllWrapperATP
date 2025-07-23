@@ -7,7 +7,7 @@ from IEEE_Cigre_DLLInterface import *
 from IEEE_Cigre_DLLInterface_types import *
 
 # Load the DLL
-dll= "IBR1_32"
+dll= "scm_32"
 dllFile= f"c:/users/josé montoya/documents/documentos_jm/proyecto wrapper dll atp/ejemplo enlazar dll/create_models__32/{ dll }.dll"  # Add .dll extension explicitly
 if not os.path.exists( dllFile ):
   print( f'Cannot find "{ dllFile }"' )
@@ -43,6 +43,9 @@ print( f"Name= { modelName }" )
 szI= modelInfo.NumInputPorts
 szO= modelInfo.NumOutputPorts
 szP= modelInfo.NumParameters
+szIntSt= modelInfo.NumIntStates
+szFlSt= modelInfo.NumFloatStates
+szDbSt= modelInfo.NumDoubleStates
 
 namesInputs= [ modelInfo.InputPortsInfo[i].Name.decode() for i in range( szI ) ]
 namesOutputs= [ modelInfo.OutputPortsInfo[i].Name.decode() for i in range( szO ) ]
@@ -83,7 +86,7 @@ MODELS { modelName }
 
   ENDINIT
 
-  MODEL { modelName }_dll FOREIGN dll_one {{ ixdata: { szP + 2 }, ixin: { szI + szO + 1 }, ixout: { szO }, ixvar: 0 }}
+  MODEL { modelName }_dll FOREIGN dll_one {{ ixdata: { szP + 2 }, ixin: { szI + szO + 1 }, ixout: { szO }, ixvar: { szIntSt + szFlSt + szDbSt } }}
 
   EXEC
 

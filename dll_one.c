@@ -6,8 +6,6 @@
 #include "IEEE_Cigre_DLLInterface.h"
 
 
-#define MAXL 256
-
 static HMODULE hDLL = NULL;
 static IEEE_Cigre_DLLInterface_Instance *ptr_toModel= NULL;
 static FILE *pFile= NULL;
@@ -63,7 +61,7 @@ void readDllName( char* FileName ) {
     hDLL= LoadLibrary( FileName );
     if ( hDLL == NULL ) {
       printLIS_( "Cannot find \"%s\"\n", FileName );
-      exit( EXIT_FAILURE );
+      // exit( EXIT_FAILURE );
     }
   }
 }
@@ -74,7 +72,6 @@ void getAlignmentSizeAndOffset( int32_T type, int32_T *alignment, size_t *curren
   switch ( type ) {
     case IEEE_Cigre_DLLInterface_DataType_int32_T: *alignment= sizeof( int32_T ); break;
     case IEEE_Cigre_DLLInterface_DataType_real64_T: *alignment= sizeof( real64_T ); break;
-    // default: *alignment= 1; break;
   }
 
   size_t remainder= *currentOffset % *alignment;
@@ -87,33 +84,48 @@ void getAlignmentSizeAndOffset( int32_T type, int32_T *alignment, size_t *curren
 }
 
 // Assign the data type to a vector based on a structure coming from the dll model
-void *changeDataType( double *valuesFromATP, int *types, size_t *offsets, int size, double *valuesToModel ) { 
+void changeDataType( double *valuesFromATP, int *types, size_t *offsets, int size, double *valuesToModel ) { 
 
   int32_T i;
 
   // Write the values into 'valuesToModel':
   for ( i= 0; i < size; i++ ) {
 
-    if ( types[i] == IEEE_Cigre_DLLInterface_DataType_int32_T ) {
-      int32_T val= ( int32_T )( valuesFromATP[i] );                                                                                             // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
-      *( ( int32_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                        // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( int32_T ) );
-    } else if ( types[i] == IEEE_Cigre_DLLInterface_DataType_real64_T ) {
-      real64_T val= ( real64_T )( valuesFromATP[i] );
-      *( ( real64_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                       // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( real64_T ) );
+    // if ( types[i] == IEEE_Cigre_DLLInterface_DataType_int32_T ) {
+    //   int32_T val= ( int32_T )( valuesFromATP[i] );                                                                                             // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+    //   *( ( int32_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                        // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( int32_T ) );
+    // } else if ( types[i] == IEEE_Cigre_DLLInterface_DataType_real64_T ) {
+    //   real64_T val= ( real64_T )( valuesFromATP[i] );
+    //   *( ( real64_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;                                                                       // memcpy( ( uint8_t* )buffer + offset, &val, sizeof( real64_T ) );
+    // }
+
+    switch ( types[i] ) {
+      case IEEE_Cigre_DLLInterface_DataType_int32_T: {
+        int32_T val= ( int32_T )( valuesFromATP[i] );                                                                                             // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        *( ( int32_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;
+        break;
+      }
+      case IEEE_Cigre_DLLInterface_DataType_real64_T: {
+        real64_T val= ( real64_T )( valuesFromATP[i] );
+        *( ( real64_T* )( ( uint8_t* ) valuesToModel + offsets[i] ) )= val;
+        break;
+      }
     }
 
   }
 
+  
+
 }
 
 // Create 'Input', 'Output' and 'Parameters' vectors with the data type that the DLL model needs
-void *processModelVector( const char *label, int32_T size, int32_T *types, size_t *offsets, IEEE_Cigre_DLLInterface_Model_Info *modelInfo, real64_T *valuesFromATP ) {
+void* processModelVector( const char *label, int32_T size, int32_T *types, size_t *offsets, IEEE_Cigre_DLLInterface_Model_Info *modelInfo, real64_T *valuesFromATP ) {
 
   const char **names= malloc( size * sizeof( char * ) );
 
   if ( !names ) {
     fprintf( stderr, "Memory allocation failed in processModelVector for %s\n", label );
-    exit( EXIT_FAILURE );
+    // exit( EXIT_FAILURE );
   }
 
   int32_T i;
@@ -144,7 +156,7 @@ void *processModelVector( const char *label, int32_T size, int32_T *types, size_
 
   if ( !valuesToModel ) {
     fprintf( stderr, "Memory allocation failed in processModelVector for 'valuesToModel' in %s\n", label );
-    exit( EXIT_FAILURE );
+    // exit( EXIT_FAILURE );
   }
 
   // Write the values into 'valuesToModel':
@@ -177,12 +189,25 @@ void writeValuesToATP( void *valuesFromModel, int *types, size_t *offsets, int s
 
     double valueAsDouble;
     
-    if ( types[i] == 6 )  {  
-      int32_T val= *( int32_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );
-      valueAsDouble= ( double ) val;
-    } else if ( types[i] == 9 ) { 
-      real64_T val= *( real64_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );
-      valueAsDouble= ( double ) val;
+    // if ( types[i] == 6 )  {  
+    //   int32_T val= *( int32_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );
+    //   valueAsDouble= ( double ) val;
+    // } else if ( types[i] == 9 ) { 
+    //   real64_T val= *( real64_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );
+    //   valueAsDouble= ( double ) val;
+    // }
+
+    switch ( types[i] ) {
+      case IEEE_Cigre_DLLInterface_DataType_int32_T: {
+        int32_T val= *( int32_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );                                                                                             // Initial validation with the aim of 'jump' the first value from ATP because that value is the simulation time
+        valueAsDouble= ( double ) val;
+        break;
+      }
+      case IEEE_Cigre_DLLInterface_DataType_real64_T: {
+        real64_T val= *( real64_T * )( ( uint8_t * ) valuesFromModel + offsets[i] );
+        valueAsDouble= ( double ) val;
+        break;
+      }
     }
 
     valuesToATP[i]= valueAsDouble;
@@ -209,7 +234,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   } else {
     printLIS_( "Could not read from file\n" );
     fclose( pFile );
-    exit( EXIT_FAILURE );
+    // exit( EXIT_FAILURE );
   }
 
   fclose( pFile );
@@ -225,10 +250,10 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   // GetInfo function
 
-  GetInfo getInfo= ( GetInfo )GetProcAddress( hDLL, "Model_GetInfo" );
+  GetInfo getInfo= ( GetInfo ) GetProcAddress( hDLL, "Model_GetInfo" );
   if ( getInfo == NULL ) {
     printLIS_( "Cannot locate Model_GetInfo function in dll\n" );
-    exit( EXIT_FAILURE );
+    // exit( EXIT_FAILURE );
   } 
 
   IEEE_Cigre_DLLInterface_Model_Info *modelInfo= getInfo();
@@ -318,7 +343,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   if ( ptr_toModel == NULL ) {
     printLIS_( "Memory allocation failed for 'toModel'\n" );
-    exit( EXIT_FAILURE );
+    // exit( EXIT_FAILURE );
   }
 
   ptr_toModel -> ExternalInputs= InputSignals;                    // InputSignals
@@ -358,7 +383,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   CheckParameters checkParameters= ( CheckParameters ) GetProcAddress( hDLL, "Model_CheckParameters" );
   if ( checkParameters == NULL ) {
     printLIS_( "Cannot locate Model_CheckParameters function in dll\n" );
-    exit( EXIT_FAILURE );
+    // exit( EXIT_FAILURE );
   } else {
     checkParams= checkParameters( ptr_toModel );
     printLIS_( "CheckParams: %i\n", checkParams );
@@ -372,14 +397,14 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   modelInitialize= ( ModelInitialize ) GetProcAddress( hDLL, "Model_Initialize" );
   if ( modelInitialize == NULL ) {
     printLIS_( "Cannot locate Model_Initialize function in dll\n" );
-    exit( EXIT_FAILURE );
+    // exit( EXIT_FAILURE );
   }  
 
 
   modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
   if ( modelOutputs == NULL ) {
     printLIS_( "Cannot locate 'modelOutputs' function in dll\n" );
-    exit( EXIT_FAILURE );
+    // exit( EXIT_FAILURE );
   }
 
 
@@ -422,7 +447,7 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
       // printLIS_( "ModelOutputs: %i\n", modelOut );
 
       // Return the model's outputs values to ATP
-      writeValuesToATP( ptr_toModel->ExternalOutputs, outputsTypes, outputsOffsets, sizeOutputs, xout_ar );
+      writeValuesToATP( ptr_toModel -> ExternalOutputs, outputsTypes, outputsOffsets, sizeOutputs, xout_ar );
 
     }  
       

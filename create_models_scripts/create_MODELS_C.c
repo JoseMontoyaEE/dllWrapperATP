@@ -164,12 +164,12 @@ void initSection( char **blueprint,
 }
 
 
-void fgnSection( char **blueprint, char *modelName, int sizeInputs, int sizeOutputs, int sizeParams ) {
+void fgnSection( char **blueprint, char *modelName, int sizeInputs, int sizeOutputs, int sizeParams, int sizeNumIntStates, int sizeNumFloatStates, int sizeNumDoubleStates ) {
   
   char *fgnSec= malloc( 512 );
   fgnSec[0]= '\0';
 
-  sprintf( fgnSec, "MODEL %s_dll FOREIGN dll_one { ixdata: %i, ixin: %i, ixout: %i, ixvar: 0 }\n", modelName, ( sizeParams + 2 ), ( sizeInputs + 2 ), sizeOutputs );
+  sprintf( fgnSec, "MODEL %s_dll FOREIGN dll_one { ixdata: %i, ixin: %i, ixout: %i, ixvar: %i }\n", modelName, ( sizeParams + 2 ), ( sizeInputs + 2 ), sizeOutputs, ( sizeNumIntStates + sizeNumFloatStates + sizeNumDoubleStates ) );
   appendSection( blueprint, 0, ( const char ** )&fgnSec, 1 );   
 
   free( fgnSec );
@@ -261,7 +261,7 @@ void execSection( char **blueprint,
 }
 
 
-char* modelBlueprint( char *modelName, const char **namesParams, int sizeParams, const char **namesInputs, int sizeInputs, const char **namesOutputs, int sizeOutputs ) {
+char* modelBlueprint( char *modelName, const char **namesParams, int sizeParams, const char **namesInputs, int sizeInputs, const char **namesOutputs, int sizeOutputs, int sizeNumIntStates, int sizeNumFloatStates, int sizeNumDoubleStates ) {
     
   // Estimate total size required (conservatively)
   int bufferSize= 5120; 
@@ -328,7 +328,7 @@ char* modelBlueprint( char *modelName, const char **namesParams, int sizeParams,
   initSection( &blueprint, sizeInputs, namesInputs, sizeOutputs, namesOutputs, sizeParams, namesParams, inputsFromATP, paramsFromATP, outputsInit );
 
   // Load the DLL 
-  fgnSection( &blueprint, modelName, sizeInputs, sizeOutputs, sizeParams );
+  fgnSection( &blueprint, modelName, sizeInputs, sizeOutputs, sizeParams, sizeNumIntStates, sizeNumFloatStates, sizeNumDoubleStates );
 
   // EXEC
   execSection( &blueprint, modelName, sizeInputs, namesInputs, sizeOutputs, namesOutputs, sizeParams, namesParams, inputsFromATP, paramsFromATP, outputsInit );
@@ -356,7 +356,7 @@ int main() {
   char *dllFile= "realCodeExample";                             // scm_32   realCodeExample  
   int i;
 
-  FILE *pFile= fopen( "C:\\ATP\\libmingw_2024\\dll_list.txt", "r" );
+  FILE *pFile= fopen( "dll_list.txt", "r" );
   char buf_dll[128]= { 0 };
 
   if ( pFile != NULL && fgets( buf_dll, sizeof( buf_dll ), pFile ) != NULL ) {
@@ -397,7 +397,7 @@ int main() {
   }
 
   IEEE_Cigre_DLLInterface_Model_Info *modelInfo= getInfo();
-  printf( "Model Inputs: \n Name= %s\n", modelInfo -> ModelName );
+  printf( "Model Name= %s\n", ( const char * ) modelInfo -> ModelName );
 
   const char *modelName= modelInfo -> ModelName;
   char modelNameF[24];  
@@ -413,6 +413,9 @@ int main() {
   int sizeInputs=  modelInfo -> NumInputPorts;
   int sizeOutputs= modelInfo -> NumOutputPorts;
   int sizeParams=  modelInfo -> NumParameters;
+  int sizeNumIntStates= modelInfo -> NumIntStates;
+  int sizeNumFloatStates= modelInfo -> NumFloatStates;
+  int sizeNumDoubleStates= modelInfo -> NumDoubleStates;
 
 
   printf( "_______________________________________________________________________________________________\n\n" );
@@ -428,7 +431,7 @@ int main() {
   variablesNames( "Parameters", sizeParams, modelInfo, namesParams );
 
 
-  char *blueprint= modelBlueprint( modelNameF, namesParams, sizeParams, namesInputs, sizeInputs, namesOutputs, sizeOutputs );
+  char *blueprint= modelBlueprint( modelNameF, namesParams, sizeParams, namesInputs, sizeInputs, namesOutputs, sizeOutputs, sizeNumIntStates, sizeNumFloatStates, sizeNumDoubleStates );
 
 
   exportToFile( "models_output.txt", blueprint );
