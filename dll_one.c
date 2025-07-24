@@ -79,7 +79,7 @@ void getAlignmentSizeAndOffset( int32_T type, int32_T *alignment, size_t *curren
     case IEEE_Cigre_DLLInterface_DataType_uint32_T: *alignment= sizeof( uint32_T ); break;
     case IEEE_Cigre_DLLInterface_DataType_real32_T: *alignment= sizeof( real32_T ); break;
     case IEEE_Cigre_DLLInterface_DataType_real64_T: *alignment= sizeof( real64_T ); break;
-    case IEEE_Cigre_DLLInterface_DataType_c_string_T: *alignment= sizeof( '\0' ); break;
+    // case IEEE_Cigre_DLLInterface_DataType_c_string_T: *alignment= sizeof( '\0' ); break;
   }
 
   size_t remainder= *currentOffset % *alignment;
@@ -157,9 +157,7 @@ void changeDataType( double *valuesFromATP, int *types, size_t *offsets, int siz
 
     }
 
-  }
-
-  
+  }  
 
 }
 
@@ -293,10 +291,22 @@ void writeValuesToATP( void *valuesFromModel, int *types, size_t *offsets, int s
     }
 
     valuesToATP[i]= valueAsDouble;
+    
   }
 
 }
 
+
+void showMessage( int32_T fcn ) {
+
+  if ( fcn == 1 ) {
+    printLIS_( "GeneralMessage= %s\n", ptr_toModel -> LastGeneralMessage );
+  } else if ( fcn == 2 ) {
+    printLIS_( "ErrorMessage= %s\n", ptr_toModel -> LastErrorMessage );
+    return;
+  }
+
+}
 
 
 void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double xvar_ar[] ) {
@@ -307,7 +317,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   printLIS_( "Initializing model 'dll_one_i'" );
   
   
-  pFile= fopen( "C:/Users/JOSMON~1/Desktop/dll_list.txt", "r" );
+  pFile= fopen( "C:/DLL_Files/dll_list.txt", "r" );
   char buf_dll[128]= { 0 };
 
 
@@ -315,7 +325,6 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
     buf_dll[ strcspn( buf_dll, "\r\n" ) ]= '\0';
   } else {
     printLIS_( "Could not read from file\n" );
-    fclose( pFile );
     // exit( EXIT_FAILURE );
   }
 
@@ -324,10 +333,20 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   printLIS_( "Archivo txt= %s\n", buf_dll );
 
 
+
+  // ___________________________________________________________________
+
   
+
   // Read the external DLL model
-  // readDllName( buf_dll );
-  readDllName( "scm_32" );                                         // realCodeExample     scm_32       SCRX_Photon
+
+  readDllName( buf_dll );
+  // readDllName( "scm_32" );                                         // realCodeExample     scm_32       scm_Photon
+
+
+
+  // ___________________________________________________________________
+
 
 
   // GetInfo function
@@ -447,14 +466,15 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
 
   
+  
   int32_T firstCall;
   ModelFirstCall modelFirstCall= ( ModelFirstCall ) GetProcAddress( hDLL, "Model_FirstCall" );
   if ( modelFirstCall != NULL ) {
     firstCall= modelFirstCall( ptr_toModel );
     printLIS_( "FirstCall: %i\n", firstCall );
-  // } else {    
-  //   printLIS_( "FirstCall doesn't exist!\n" );
-  //   return;
+  } else {    
+    printLIS_( "FirstCall doesn't exist!\n" );
+    return;
   }
 
   
@@ -470,6 +490,8 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
     checkParams= checkParameters( ptr_toModel );
     printLIS_( "CheckParams: %i\n", checkParams );
   }
+  
+  showMessage( checkParams );
 
 
   // _________________________________________________________________________________________________________________________________
@@ -496,6 +518,8 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   int32_T modelInit= modelInitialize( ptr_toModel );
   printLIS_( "ModelInit: %i\n", modelInit );        
+  showMessage( modelInit );
+
   
     
 }
@@ -516,8 +540,10 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
       changeDataType( xin_ar, inputsTypes, inputsOffsets, sizeInputs, ptr_toModel -> ExternalInputs );
 
       int32_T modelInit= modelInitialize( ptr_toModel );
+      showMessage( modelInit );
 
       int32_T modelOut= modelOutputs( ptr_toModel );
+      showMessage( modelOut );
 
 
     } else {        
@@ -526,19 +552,15 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
       changeDataType( xin_ar, inputsTypes, inputsOffsets, sizeInputs, ptr_toModel -> ExternalInputs );
 
       int32_T modelOut= modelOutputs( ptr_toModel );
-      // printLIS_( "ModelOutputs: %i\n", modelOut );
+      showMessage( modelOut );
 
       // Return the model's outputs values to ATP
       writeValuesToATP( ptr_toModel -> ExternalOutputs, outputsTypes, outputsOffsets, sizeOutputs, xout_ar );
 
     }  
       
-    // printLIS_( "NextTimeStepDLL= %f\n", nextTimeStepDLL );
     nextTimeStepDLL += timeStepDLL;
 
   }
-
-  // printLIS_( "SimulationTime= %f\n", t );
-  // printLIS_( "X_out= %f\n", xout_ar[0] );
 
 }
