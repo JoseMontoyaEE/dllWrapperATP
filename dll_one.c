@@ -36,6 +36,7 @@ static ModelInitialize modelInitialize;
 
 
 void outsix_( char *, int32_T * );
+void stoptp_( char *, int * );
 
 // Print in  '.LIS' file
 void printLIS_( const char *fmt, ... ) {
@@ -52,6 +53,14 @@ void printLIS_( const char *fmt, ... ) {
 
   // Example:
   // printLIS_( "xvar_ar[0]= %.2f, %.2f, %.2f.", xvar_ar[0], xvar_ar[1], xvar_ar[2] );
+}
+
+// Stop the simulation in a 'well-ordered manner'
+void stopSim( const char *errorMessage ) {
+  printLIS_( "ERROR: %s\n", errorMessage );
+  char msg[]= "Stopping ATP simulation";
+  int len= strlen( msg );
+  stoptp_( msg, &len );
 }
 
 // Read the external dll model
@@ -296,17 +305,18 @@ void writeValuesToATP( void *valuesFromModel, int *types, size_t *offsets, int s
 
 }
 
-
-void showMessage( int32_T fcn ) {
+// Shows "LastGeneralMessage" or "LastErrorMessage" if a warning or an error appears
+void showErrorIfAny( int32_T fcn ) {
 
   if ( fcn == 1 ) {
     printLIS_( "GeneralMessage= %s\n", ptr_toModel -> LastGeneralMessage );
   } else if ( fcn == 2 ) {
     printLIS_( "ErrorMessage= %s\n", ptr_toModel -> LastErrorMessage );
-    return;
+    stopSim( " " );                                                                        // Shows anything
   }
 
 }
+
 
 
 void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double xvar_ar[] ) {
@@ -472,9 +482,9 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   if ( modelFirstCall != NULL ) {
     firstCall= modelFirstCall( ptr_toModel );
     printLIS_( "FirstCall: %i\n", firstCall );
+    showErrorIfAny( firstCall );
   } else {    
-    printLIS_( "FirstCall doesn't exist!\n" );
-    return;
+    stopSim( "Cannot locate Model_FirstCall function in dll\n" );
   }
 
   
@@ -484,14 +494,13 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   int32_T checkParams;
   CheckParameters checkParameters= ( CheckParameters ) GetProcAddress( hDLL, "Model_CheckParameters" );
   if ( checkParameters == NULL ) {
-    printLIS_( "Cannot locate Model_CheckParameters function in dll\n" );
-    // exit( EXIT_FAILURE );
+    stopSim( "Cannot locate Model_CheckParameters function in dll\n" );
   } else {
     checkParams= checkParameters( ptr_toModel );
     printLIS_( "CheckParams: %i\n", checkParams );
-  }
-  
-  showMessage( checkParams );
+    showErrorIfAny( checkParams );
+  } 
+
 
 
   // _________________________________________________________________________________________________________________________________
@@ -500,25 +509,24 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   modelInitialize= ( ModelInitialize ) GetProcAddress( hDLL, "Model_Initialize" );
   if ( modelInitialize == NULL ) {
-    printLIS_( "Cannot locate Model_Initialize function in dll\n" );
-    // exit( EXIT_FAILURE );
+    stopSim( "Cannot locate Model_Initialize function in dll\n" );
   }  
 
 
   modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
   if ( modelOutputs == NULL ) {
-    printLIS_( "Cannot locate 'modelOutputs' function in dll\n" );
-    // exit( EXIT_FAILURE );
+    stopSim( "Cannot locate Model_Outputs function in dll\n" );    
   }
 
 
+  
   // _________________________________________________________________________________________________________________________________
 
 
 
   int32_T modelInit= modelInitialize( ptr_toModel );
   printLIS_( "ModelInit: %i\n", modelInit );        
-  showMessage( modelInit );
+  showErrorIfAny( modelInit );
 
   
     
@@ -540,10 +548,10 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
       changeDataType( xin_ar, inputsTypes, inputsOffsets, sizeInputs, ptr_toModel -> ExternalInputs );
 
       int32_T modelInit= modelInitialize( ptr_toModel );
-      showMessage( modelInit );
+      showErrorIfAny( modelInit );
 
       int32_T modelOut= modelOutputs( ptr_toModel );
-      showMessage( modelOut );
+      showErrorIfAny( modelOut );
 
 
     } else {        
@@ -552,7 +560,7 @@ void dll_one_m__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
       changeDataType( xin_ar, inputsTypes, inputsOffsets, sizeInputs, ptr_toModel -> ExternalInputs );
 
       int32_T modelOut= modelOutputs( ptr_toModel );
-      showMessage( modelOut );
+      showErrorIfAny( modelOut );
 
       // Return the model's outputs values to ATP
       writeValuesToATP( ptr_toModel -> ExternalOutputs, outputsTypes, outputsOffsets, sizeOutputs, xout_ar );
