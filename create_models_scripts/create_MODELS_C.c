@@ -8,6 +8,7 @@
 
 typedef int32_T ( *PrintInfo )( void ); 
 typedef IEEE_Cigre_DLLInterface_Model_Info* ( *GetInfo )( void );
+static GetInfo getInfo;
 
 
 void variablesNames( const char *label, int32_T size, IEEE_Cigre_DLLInterface_Model_Info *modelInfo, const char **namesVectors ) {
@@ -164,7 +165,7 @@ void initSection( char **blueprint,
 }
 
 
-void fgnSection( char **blueprint, char *modelName, int sizeInputs, int sizeOutputs, int sizeParams, int sizeNumIntStates, int sizeNumFloatStates, int sizeNumDoubleStates ) {
+void fgnSection( char **blueprint, const char *modelName, int sizeInputs, int sizeOutputs, int sizeParams, int sizeNumIntStates, int sizeNumFloatStates, int sizeNumDoubleStates ) {
   
   char *fgnSec= malloc( 512 );
   fgnSec[0]= '\0';
@@ -177,7 +178,7 @@ void fgnSection( char **blueprint, char *modelName, int sizeInputs, int sizeOutp
 
 
 void execSection( char **blueprint, 
-                  char *modelName, 
+                  const char *modelName, 
                   int sizeInputs, 
                   const char **namesInputs, 
                   int sizeOutputs, 
@@ -261,8 +262,104 @@ void execSection( char **blueprint,
 }
 
 
-char* modelBlueprint( char *modelName, const char **namesParams, int sizeParams, const char **namesInputs, int sizeInputs, const char **namesOutputs, int sizeOutputs, int sizeNumIntStates, int sizeNumFloatStates, int sizeNumDoubleStates ) {
+void* defaultParameters( IEEE_Cigre_DLLInterface_Model_Info *modelInfo, int size, char *dfltPrmSec ) {
+
+  int i;
+  char dfltP_aux[128];  
+  
+  for ( i= 0; i < size; i++ ) {
+    const IEEE_Cigre_DLLInterface_Parameter *param = &modelInfo->ParametersInfo[i];
+
+    switch ( param -> DataType ) {
+
+      case IEEE_Cigre_DLLInterface_DataType_char_T:
+        sprintf( dfltP_aux, "    %s { DFLT: %c }\n", param -> Name, param -> DefaultValue.Char_Val );
+        strcat( dfltPrmSec, dfltP_aux );
+        break;
+
+      case IEEE_Cigre_DLLInterface_DataType_int8_T:
+        sprintf( dfltP_aux, "    %s { DFLT: %hhd }\n", param -> Name, param -> DefaultValue.Int8_Val );
+        strcat( dfltPrmSec, dfltP_aux );
+        break;
+
+      case IEEE_Cigre_DLLInterface_DataType_uint8_T:
+        sprintf( dfltP_aux, "    %s { DFLT: %hhu }\n", param -> Name, param -> DefaultValue.Uint8_Val );
+        strcat( dfltPrmSec, dfltP_aux );
+        break;
+
+      case IEEE_Cigre_DLLInterface_DataType_int16_T:
+        sprintf( dfltP_aux, "    %s { DFLT: %hd }\n", param -> Name, param -> DefaultValue.Int16_Val );
+        strcat( dfltPrmSec, dfltP_aux );
+        break;
+
+      case IEEE_Cigre_DLLInterface_DataType_uint16_T:
+        sprintf( dfltP_aux, "    %s { DFLT: %hu }\n", param -> Name, param -> DefaultValue.Uint16_Val );
+        strcat( dfltPrmSec, dfltP_aux );
+        break;
+
+      case IEEE_Cigre_DLLInterface_DataType_int32_T:
+        sprintf( dfltP_aux, "    %s { DFLT: %d }\n", param -> Name, param -> DefaultValue.Int32_Val );
+        strcat( dfltPrmSec, dfltP_aux );
+        break;
+   
+      case IEEE_Cigre_DLLInterface_DataType_uint32_T:
+        sprintf( dfltP_aux, "    %s { DFLT: %u }\n", param -> Name, param -> DefaultValue.Uint32_Val );
+        strcat( dfltPrmSec, dfltP_aux );
+        break;
+
+      case IEEE_Cigre_DLLInterface_DataType_real32_T:
+        sprintf( dfltP_aux, "    %s { DFLT: %.4f }\n", param -> Name, param -> DefaultValue.Real32_Val );
+        strcat( dfltPrmSec, dfltP_aux );
+        break;
+
+      case IEEE_Cigre_DLLInterface_DataType_real64_T:
+        sprintf( dfltP_aux, "    %s { DFLT: %.4lf }\n", param -> Name, param -> DefaultValue.Real64_Val );
+        strcat( dfltPrmSec, dfltP_aux ); 
+        break;
+   
+    } 
+        
+  }
+
+}
+
+
+char* modelBlueprint( IEEE_Cigre_DLLInterface_Model_Info *modelInfo ) {
     
+  int i;
+  const char *modelName= modelInfo -> ModelName;
+  char modelNameF[24];  
+  strcpy( modelNameF, modelName );  
+
+  for ( i= 0; modelNameF[i] != '\0'; i++ ) {
+    if ( modelNameF[i] == ' ' ) {
+      modelNameF[i]= '_';
+    }
+  }
+  
+  int sizeInputs=  modelInfo -> NumInputPorts;
+  int sizeOutputs= modelInfo -> NumOutputPorts;
+  int sizeParams=  modelInfo -> NumParameters;
+  int sizeNumIntStates= modelInfo -> NumIntStates;
+  int sizeNumFloatStates= modelInfo -> NumFloatStates;
+  int sizeNumDoubleStates= modelInfo -> NumDoubleStates;
+
+  const char **namesInputs= malloc( sizeInputs * sizeof( const char * ) );
+  variablesNames( "Inputs", sizeInputs, modelInfo, namesInputs );
+
+  const char **namesOutputs= malloc( sizeOutputs * sizeof( const char * ) );
+  variablesNames( "Outputs", sizeOutputs, modelInfo, namesOutputs );
+
+  const char **namesParams= malloc( sizeParams * sizeof( const char * ) );
+  variablesNames( "Parameters", sizeParams, modelInfo, namesParams );
+
+
+
+  //_______________________________________________________________________________________________\n\n" );
+
+  
+
+
   // Estimate total size required (conservatively)
   int bufferSize= 5120; 
   char *blueprint= malloc( bufferSize );
@@ -279,9 +376,15 @@ char* modelBlueprint( char *modelName, const char **namesParams, int sizeParams,
   strcat( blueprint, modelName );
   strcat( blueprint, "\n" );
 
-  // Append sections
-  appendSection( &blueprint, "  DATA", namesParams, sizeParams );
-  strcat( blueprint, "    TRelease {DFLT:0}\n" );
+  // DATA
+  strcat( blueprint, "  DATA\n" );
+
+  char *dfltPrmSec= malloc( 4096 );
+  dfltPrmSec[0]= '\0';
+
+  defaultParameters( modelInfo, sizeParams, dfltPrmSec );
+  strcat( blueprint, dfltPrmSec );
+  strcat( blueprint, "    TRelease { DFLT: 0 }\n" );
   strcat( blueprint, "\n" );
 
   // INPUTS
@@ -334,6 +437,12 @@ char* modelBlueprint( char *modelName, const char **namesParams, int sizeParams,
   execSection( &blueprint, modelName, sizeInputs, namesInputs, sizeOutputs, namesOutputs, sizeParams, namesParams, inputsFromATP, paramsFromATP, outputsInit );
 
   strcat( blueprint, "ENDMODEL\n" );
+
+  free( dfltPrmSec );  
+  free( namesInputs );
+  free( namesOutputs );
+  free( namesParams );  
+
   return blueprint;
 }
 
@@ -351,9 +460,10 @@ void exportToFile( const char *filename, const char *blueprint ) {
 
 
 
+
 int main() {
 
-  char *dllFile= "realCodeExample";                             // scm_32   realCodeExample  
+  char *dllFile= "scm_32";                             // scm_32   realCodeExample  
   int i;
 
   FILE *pFile= fopen( "dll_list.txt", "r" );
@@ -373,24 +483,24 @@ int main() {
   printf( "Archivo txt= %s\n", buf_dll );
 
 
-  HMODULE hDLL= LoadLibrary( buf_dll );
-  // HMODULE hDLL= LoadLibrary( dllFile );
+  // HMODULE hDLL= LoadLibrary( buf_dll );
+  HMODULE hDLL= LoadLibrary( dllFile );
   if ( hDLL == NULL ) {
     printf( "Cannot find \"%s\"\n", dllFile );
     exit( EXIT_FAILURE );
   }
 
-  // Obtain function addresses
-  PrintInfo printInfo= ( PrintInfo ) GetProcAddress( hDLL, "Model_PrintInfo" );
-  if ( printInfo == NULL ) {
-    printf( "Cannot locate Model_PrintInfo function in dll\n" );
-    exit( EXIT_FAILURE );
-  }
+
+  // PrintInfo printInfo= ( PrintInfo ) GetProcAddress( hDLL, "Model_PrintInfo" );
+  // if ( printInfo == NULL ) {
+  //   printf( "Cannot locate Model_PrintInfo function in dll\n" );
+  //   exit( EXIT_FAILURE );
+  // }
 
 
   // GetInfo function
 
-  GetInfo getInfo= ( GetInfo ) GetProcAddress( hDLL, "Model_GetInfo" );
+  getInfo= ( GetInfo ) GetProcAddress( hDLL, "Model_GetInfo" );
   if ( getInfo == NULL ) {
     printf( "Cannot locate Model_GetInfo function in dll\n" );
     exit( EXIT_FAILURE );
@@ -399,39 +509,12 @@ int main() {
   IEEE_Cigre_DLLInterface_Model_Info *modelInfo= getInfo();
   printf( "Model Name= %s\n", ( const char * ) modelInfo -> ModelName );
 
-  const char *modelName= modelInfo -> ModelName;
-  char modelNameF[24];  
-  strcpy( modelNameF, modelName );  
-
-  for ( i= 0; modelNameF[i] != '\0'; i++ ) {
-    if ( modelNameF[i] == ' ' ) {
-      modelNameF[i]= '_';
-    }
-  }
-
-  
-  int sizeInputs=  modelInfo -> NumInputPorts;
-  int sizeOutputs= modelInfo -> NumOutputPorts;
-  int sizeParams=  modelInfo -> NumParameters;
-  int sizeNumIntStates= modelInfo -> NumIntStates;
-  int sizeNumFloatStates= modelInfo -> NumFloatStates;
-  int sizeNumDoubleStates= modelInfo -> NumDoubleStates;
-
 
   printf( "_______________________________________________________________________________________________\n\n" );
 
-  
-  const char **namesInputs= malloc( sizeInputs * sizeof( const char * ) );
-  variablesNames( "Inputs", sizeInputs, modelInfo, namesInputs );
-
-  const char **namesOutputs= malloc( sizeOutputs * sizeof( const char * ) );
-  variablesNames( "Outputs", sizeOutputs, modelInfo, namesOutputs );
-
-  const char **namesParams= malloc( sizeParams * sizeof( const char * ) );
-  variablesNames( "Parameters", sizeParams, modelInfo, namesParams );
 
 
-  char *blueprint= modelBlueprint( modelNameF, namesParams, sizeParams, namesInputs, sizeInputs, namesOutputs, sizeOutputs, sizeNumIntStates, sizeNumFloatStates, sizeNumDoubleStates );
+  char *blueprint= modelBlueprint( modelInfo );
 
 
   exportToFile( "models_output.txt", blueprint );
@@ -444,9 +527,6 @@ int main() {
 
   // Close the dll
   FreeLibrary( hDLL );
-  free( namesInputs );
-  free( namesOutputs );
-  free( namesParams );  
   
   return 0;
 }
