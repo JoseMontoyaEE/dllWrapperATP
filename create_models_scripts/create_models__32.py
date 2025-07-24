@@ -69,7 +69,7 @@ def defaultParameters( modelInfo, namesParams, i ):
     case 9:
       dfltP= str( param.DefaultValue.Real64_Val )
       
-  dfltP= "".join( f"{ namesParams[i] } {{ DFLT:= { dfltP } }}" )
+  dfltP= "".join( f"{ namesParams[i] } {{ DFLT: { dfltP } }}" )
   return dfltP
 
 
