@@ -17,10 +17,10 @@
       CONTINUE !     a newer version of ATP later
       DATA refnam(1) / 'SAMPLE_MODEL' /  ! Do not modify this line
       DATA refnam(2) / 'ULM_LINE' /  ! Do not modify this line
-      DATA refnam(3) / 'NEG_FGN_F' /
-      DATA refnam(4) / 'NEG_FGN_C' /
-      DATA refnam(5) / 'DLL_ONE' /
-      DATA refnam(6) / 'DLL_0' /
+      DATA refnam(3) / 'DLL_ONE' /
+      DATA refnam(4) / ' ' /
+      DATA refnam(5) / ' ' /
+      DATA refnam(6) / ' ' /
       DATA refnam(7) / ' ' /
       DATA refnam(8) / ' ' /
       CONTINUE !  --------------------------------------------------
@@ -67,30 +67,24 @@
       CONTINUE !      -------------------------------------------
       ELSE IF ( iname.EQ.3 ) THEN
        IF (iniflg.EQ.1) THEN
-        CALL neg_fgn_f_i(xdata, xin, xout, xvar)
-       ELSE
-        CALL neg_fgn_f_m(xdata, xin, xout, xvar)
-       ENDIF
-      CONTINUE !      -------------------------------------------
-      ELSE IF ( iname.EQ.4 ) THEN
-       IF (iniflg.EQ.1) THEN
-        CALL neg_fgn_c_i(xdata, xin, xout, xvar)
-       ELSE
-        CALL neg_fgn_c_m(xdata, xin, xout, xvar)
-       ENDIF
-      CONTINUE !      -------------------------------------------
-      ELSE IF ( iname.EQ.5 ) THEN
-       IF (iniflg.EQ.1) THEN
         CALL dll_one_i(xdata, xin, xout, xvar)
        ELSE
         CALL dll_one_m(xdata, xin, xout, xvar)
        ENDIF
       CONTINUE !      -------------------------------------------
+      ELSE IF ( iname.EQ.4 ) THEN
+       IF (iniflg.EQ.1) THEN
+       ELSE
+       ENDIF
+      CONTINUE !      -------------------------------------------
+      ELSE IF ( iname.EQ.5 ) THEN
+       IF (iniflg.EQ.1) THEN
+       ELSE
+       ENDIF
+      CONTINUE !      -------------------------------------------
       ELSE IF ( iname.EQ.6 ) THEN
        IF (iniflg.EQ.1) THEN
-        CALL dll_0_i(xdata, xin, xout, xvar)
        ELSE
-        CALL dll_0_m(xdata, xin, xout, xvar)
        ENDIF
       CONTINUE !      -------------------------------------------
       ELSE IF ( iname.EQ.7 ) THEN

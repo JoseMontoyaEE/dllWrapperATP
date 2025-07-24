@@ -25,8 +25,7 @@ OBJECTS =dimdef.o \
 	user10.o \
 	userline.o \
 	nlelem.o \
-	user96.o crandom.o cmodel.o cfun.o neg_fgn_f.o neg_fgn_c.o neg_fgn_cpp.o dll_one.o dll_0.o
-#	user96.o crandom.o cmodel.o cfun.o neg_fgn_f.o neg_fgn_c.o neg_fgn_cpp.o neg_fgn_dll.dll rms_dll.o
+	user96.o crandom.o cmodel.o cfun.o dll_one.o
 #
 #---------------------------------------------------
 # windows NT

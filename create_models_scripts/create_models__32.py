@@ -54,6 +54,30 @@ print( f"NamesInputs= { namesInputs }" )
 print( f"NameOutputs= { namesOutputs }" )
 print( f"NamesParms= { namesParams }" )
 
+
+
+def defaultParameters( modelInfo, namesParams, i ):
+  
+  param= modelInfo.ParametersInfo[i]
+  dfltP= ""
+  
+  match param.DataType:
+    
+    case 6:
+      dfltP= str( param.DefaultValue.Int32_Val )
+    
+    case 9:
+      dfltP= str( param.DefaultValue.Real64_Val )
+      
+  dfltP= "".join( f"{ namesParams[i] } {{ DFLT:= { dfltP } }}" )
+  return dfltP
+
+
+#print( [ defaultParameters( modelInfo, namesParams, i ) for i in range( szP ) ] )
+
+
+
+
 """
 for i in range( modelInfo.NumInputPorts ):
   signal= modelInfo.InputPortsInfo[i]
@@ -61,11 +85,12 @@ for i in range( modelInfo.NumInputPorts ):
   print( f"Input {i}: { signal.Name.decode() } ( type= { dtype.name } )" )
 """
 
+
 blueprint= f"""
 MODELS { modelName }
   DATA
-    { ( ", ".join( namesParams ) if szP >= 1 else "" ) }
-    TRelease {{ DFLT:0 }}
+    { '\n    '.join( [ defaultParameters( modelInfo, namesParams, i ) for i in range( szP ) ] ) }
+    TRelease {{ DFLT: 0 }}
 
   INPUT
     { ( ", ".join( namesInputs ) if szI >= 1 else "" ) }
