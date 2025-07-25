@@ -372,7 +372,7 @@ char* modelBlueprint( IEEE_Cigre_DLLInterface_Model_Info *modelInfo ) {
   blueprint[0]= '\0';
 
   // Append title
-  strcat( blueprint, "MODELS " );
+  strcat( blueprint, "MODEL " );
   strcat( blueprint, modelName );
   strcat( blueprint, "\n" );
 
