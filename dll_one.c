@@ -30,6 +30,8 @@ typedef int32_T ( *ModelFirstCall )( IEEE_Cigre_DLLInterface_Instance* instance 
 typedef int32_T ( *CheckParameters )( IEEE_Cigre_DLLInterface_Instance* instance ); 
 typedef int32_T ( *ModelInitialize )( IEEE_Cigre_DLLInterface_Instance* instance ); 
 typedef int32_T ( *ModelOutputs )( IEEE_Cigre_DLLInterface_Instance* instance ); 
+typedef int32_T ( *ModelIterate )( IEEE_Cigre_DLLInterface_Instance* instance );
+typedef int32_T ( *ModelTerminate )( IEEE_Cigre_DLLInterface_Instance* instance );
 static ModelOutputs modelOutputs;
 static ModelInitialize modelInitialize;
 
@@ -40,27 +42,41 @@ void stoptp_( char *, int * );
 
 // Print in  '.LIS' file
 void printLIS_( const char *fmt, ... ) {
+
   char buffer[512];                                                                                       
   va_list args;
 
-  // Start processing variable arguments
   va_start( args, fmt );
   vsprintf( buffer, fmt, args );                                                                          
   va_end( args );
 
   int32_T len= strlen( buffer );                                                                              
-  outsix_( buffer, &len );                                                                                
+  outsix_( buffer, &len );                                                                               
 
-  // Example:
-  // printLIS_( "xvar_ar[0]= %.2f, %.2f, %.2f.", xvar_ar[0], xvar_ar[1], xvar_ar[2] );
 }
 
 // Stop the simulation in a 'well-ordered manner'
-void stopSim( const char *errorMessage ) {
-  printLIS_( "ERROR: %s\n", errorMessage );
-  char msg[]= "Stopping ATP simulation";
+void stopSim( const char *fmt, ... ) {
+  
+  char buffer[512];
+  va_list args;
+
+  va_start( args, fmt );
+  vsprintf( buffer, fmt, args );
+  va_end( args );
+
+  printLIS_( "_________________________________________________________________________________________________________________________________" );
+  printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
+
+  printLIS_( "ERROR: \n%s\n", buffer );
+
+  printLIS_( "_________________________________________________________________________________________________________________________________" );
+  printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
+
+  char msg[]= "Stopping ATP simulation due to error";
   int len= strlen( msg );
   stoptp_( msg, &len );
+
 }
 
 // Read the external dll model
@@ -69,10 +85,11 @@ void readDllName( char* FileName ) {
   if ( hDLL == NULL ) {
     hDLL= LoadLibrary( FileName );
     if ( hDLL == NULL ) {
-      printLIS_( "Cannot find \"%s\"\n", FileName );
-      // exit( EXIT_FAILURE );
+      // printLIS_( "Cannot find dll file \"%s\"\n", FileName );
+      stopSim( "Cannot find dll file \"%s\"\n", FileName  );
     }
   }
+
 }
 
 // Compute the amount of memory to reserve depending on the data type and number of 'Inputs', 'Outputs', and 'Parameters' the DLL model needs
@@ -176,8 +193,7 @@ void* processModelVector( const char *label, int32_T size, int32_T *types, size_
   const char **names= malloc( size * sizeof( char * ) );
 
   if ( !names ) {
-    fprintf( stderr, "Memory allocation failed in processModelVector for %s\n", label );
-    // exit( EXIT_FAILURE );
+    stopSim( "Memory allocation failed in processModelVector for 'names'\n" );
   }
 
   int32_T i;
@@ -194,7 +210,6 @@ void* processModelVector( const char *label, int32_T size, int32_T *types, size_
       types[i]= ( int32_T ) modelInfo -> ParametersInfo[i].DataType;                
     }
 
-    // printLIS_( "%s[%d]= %s, Type= %s\n", label, i, names[i], types[i] == 6 ? "int32_T" : "real64_T" );
   }
 
   size_t totalSize= 0;
@@ -207,8 +222,7 @@ void* processModelVector( const char *label, int32_T size, int32_T *types, size_
   void *valuesToModel= malloc( totalSize );
 
   if ( !valuesToModel ) {
-    fprintf( stderr, "Memory allocation failed in processModelVector for 'valuesToModel' in %s\n", label );
-    // exit( EXIT_FAILURE );
+    stopSim( "Memory allocation failed in processModelVector for 'valuesToModel'\n" );
   }
 
   // Write the values into 'valuesToModel':
@@ -226,11 +240,9 @@ void* processModelVector( const char *label, int32_T size, int32_T *types, size_
     }
   }
 
-
-  // Clean up internal allocations of 'names'
   free( names );
-
   return valuesToModel;
+
 }
 
 // Return back the values to ATP in 'double' data type
@@ -312,7 +324,7 @@ void showErrorIfAny( int32_T fcn ) {
     printLIS_( "GeneralMessage= %s\n", ptr_toModel -> LastGeneralMessage );
   } else if ( fcn == 2 ) {
     printLIS_( "ErrorMessage= %s\n", ptr_toModel -> LastErrorMessage );
-    stopSim( " " );                                                                        // Shows anything
+    stopSim( "" );                                                                        // Shows anything
   }
 
 }
@@ -321,21 +333,20 @@ void showErrorIfAny( int32_T fcn ) {
 
 void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double xvar_ar[] ) {
 
-  printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
+  printLIS_( "_________________________________________________________________________________________________________________________________\n" );
   printLIS_( "_________________________________________________________________________________________________________________________________\n\n" );
 
   printLIS_( "Initializing model 'dll_one_i'" );
   
   
-  pFile= fopen( "C:/DLL_Files/dll_list.txt", "r" );
+  pFile= fopen( "C:/ATP/libmingw_2024/dll_list.txt", "r" );
   char buf_dll[128]= { 0 };
 
 
   if ( pFile != NULL && fgets( buf_dll, sizeof( buf_dll ), pFile ) != NULL ) {
     buf_dll[ strcspn( buf_dll, "\r\n" ) ]= '\0';
   } else {
-    printLIS_( "Could not read from file\n" );
-    // exit( EXIT_FAILURE );
+    stopSim( "Could not read dll %s from file\n", buf_dll );
   }
 
   fclose( pFile );
@@ -363,8 +374,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   GetInfo getInfo= ( GetInfo ) GetProcAddress( hDLL, "Model_GetInfo" );
   if ( getInfo == NULL ) {
-    printLIS_( "Cannot locate Model_GetInfo function in dll\n" );
-    // exit( EXIT_FAILURE );
+    stopSim( "Cannot locate Model_GetInfo function in dll\n" );
   } 
 
   IEEE_Cigre_DLLInterface_Model_Info *modelInfo= getInfo();
@@ -453,8 +463,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   ptr_toModel= ( IEEE_Cigre_DLLInterface_Instance * ) malloc( sizeof( IEEE_Cigre_DLLInterface_Instance ) );
 
   if ( ptr_toModel == NULL ) {
-    printLIS_( "Memory allocation failed for 'toModel'\n" );
-    // exit( EXIT_FAILURE );
+    stopSim( "Memory allocation failed for 'ptr_toModel'\n" );
   }
 
   ptr_toModel -> ExternalInputs= InputSignals;                    // InputSignals
@@ -483,18 +492,14 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
     firstCall= modelFirstCall( ptr_toModel );
     printLIS_( "FirstCall: %i\n", firstCall );
     showErrorIfAny( firstCall );
-  } else {    
-    stopSim( "Cannot locate Model_FirstCall function in dll\n" );
-  }
+  } 
 
-  
-  // _________________________________________________________________________________________________________________________________
 
 
   int32_T checkParams;
   CheckParameters checkParameters= ( CheckParameters ) GetProcAddress( hDLL, "Model_CheckParameters" );
   if ( checkParameters == NULL ) {
-    stopSim( "Cannot locate Model_CheckParameters function in dll\n" );
+    stopSim( "Cannot locate 'Model_CheckParameters' function in dll %s\n", buf_dll );
   } else {
     checkParams= checkParameters( ptr_toModel );
     printLIS_( "CheckParams: %i\n", checkParams );
@@ -503,23 +508,40 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
 
 
-  // _________________________________________________________________________________________________________________________________
-
-
-
   modelInitialize= ( ModelInitialize ) GetProcAddress( hDLL, "Model_Initialize" );
   if ( modelInitialize == NULL ) {
-    stopSim( "Cannot locate Model_Initialize function in dll\n" );
+    stopSim( "Cannot locate 'Model_Initialize' function in dll %s\n", buf_dll );
   }  
+
 
 
   modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
   if ( modelOutputs == NULL ) {
-    stopSim( "Cannot locate Model_Outputs function in dll\n" );    
+    stopSim( "Cannot locate 'Model_Outputs' function in dll %s\n", buf_dll );    
   }
 
 
+
+  int32_T mIterate;
+  ModelIterate modelIterate= ( ModelIterate ) GetProcAddress( hDLL, "Model_Iterate" );
+  if ( modelIterate != NULL ) {
+    mIterate= modelIterate( ptr_toModel );
+    printLIS_( "ModelIterate: %i\n", mIterate );
+    showErrorIfAny( mIterate );
+  } 
+
+
+
+  int32_T mTerminate;
+  ModelTerminate modelTerminate= ( ModelTerminate ) GetProcAddress( hDLL, "Model_Terminate" );
+  if ( modelTerminate != NULL ) {
+    mTerminate= modelTerminate( ptr_toModel );
+    printLIS_( "ModelTerminate: %i\n", mTerminate );
+    showErrorIfAny( mTerminate );
+  } 
+
   
+
   // _________________________________________________________________________________________________________________________________
 
 
