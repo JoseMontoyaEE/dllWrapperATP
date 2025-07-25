@@ -80,13 +80,24 @@ void stopSim( const char *fmt, ... ) {
 }
 
 // Read the external dll model
-void readDllName( char* FileName ) {
+char readDlls( char *dllName, size_t bufferSize  ) {
+
+  pFile= fopen( "C:/ATP/libmingw_2024/dll_list.txt", "r" );
+  // char dllName[128]= { 0 };
+
+  if ( pFile != NULL && fgets( dllName, bufferSize, pFile ) != NULL ) {
+    dllName[ strcspn( dllName, "\r\n" ) ]= '\0';
+  } else {
+    stopSim( "Could not read dll %s from file\n", dllName );
+  }
+
+  fclose( pFile );
+  printLIS_( "Archivo txt= %s\n", dllName );
 
   if ( hDLL == NULL ) {
-    hDLL= LoadLibrary( FileName );
+    hDLL= LoadLibrary( dllName );
     if ( hDLL == NULL ) {
-      // printLIS_( "Cannot find dll file \"%s\"\n", FileName );
-      stopSim( "Cannot find dll file \"%s\"\n", FileName  );
+      stopSim( "Cannot find dll file \"%s\"\n", dllName  );
     }
   }
 
@@ -339,30 +350,11 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   printLIS_( "Initializing model 'dll_one_i'" );
   
   
-  pFile= fopen( "C:/ATP/libmingw_2024/dll_list.txt", "r" );
-  char buf_dll[128]= { 0 };
+  // Read the external DLL models
 
-
-  if ( pFile != NULL && fgets( buf_dll, sizeof( buf_dll ), pFile ) != NULL ) {
-    buf_dll[ strcspn( buf_dll, "\r\n" ) ]= '\0';
-  } else {
-    stopSim( "Could not read dll %s from file\n", buf_dll );
-  }
-
-  fclose( pFile );
-
-  printLIS_( "Archivo txt= %s\n", buf_dll );
-
-
-
-  // ___________________________________________________________________
-
-  
-
-  // Read the external DLL model
-
-  readDllName( buf_dll );
-  // readDllName( "scm_32" );                                         // realCodeExample     scm_32       scm_Photon
+  char dllName[128];
+  readDlls( dllName, sizeof( dllName )  ); 
+  // readDlls( "scm_32" );                                         // realCodeExample     scm_32       scm_Photon
 
 
 
@@ -374,7 +366,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   GetInfo getInfo= ( GetInfo ) GetProcAddress( hDLL, "Model_GetInfo" );
   if ( getInfo == NULL ) {
-    stopSim( "Cannot locate Model_GetInfo function in dll\n" );
+    stopSim( "Cannot locate 'Model_GetInfo' function in dll %s\n", dllName );
   } 
 
   IEEE_Cigre_DLLInterface_Model_Info *modelInfo= getInfo();
@@ -451,9 +443,6 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   void *OutputSignals= processModelVector( "Outputs", sizeOutputs, outputsTypes, outputsOffsets, modelInfo, xout_ar );
 
 
-
-
-
   
   // _________________________________________________________________________________________________________________________________
 
@@ -499,7 +488,7 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
   int32_T checkParams;
   CheckParameters checkParameters= ( CheckParameters ) GetProcAddress( hDLL, "Model_CheckParameters" );
   if ( checkParameters == NULL ) {
-    stopSim( "Cannot locate 'Model_CheckParameters' function in dll %s\n", buf_dll );
+    stopSim( "Cannot locate 'Model_CheckParameters' function in dll %s\n", dllName );
   } else {
     checkParams= checkParameters( ptr_toModel );
     printLIS_( "CheckParams: %i\n", checkParams );
@@ -510,14 +499,14 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   modelInitialize= ( ModelInitialize ) GetProcAddress( hDLL, "Model_Initialize" );
   if ( modelInitialize == NULL ) {
-    stopSim( "Cannot locate 'Model_Initialize' function in dll %s\n", buf_dll );
+    stopSim( "Cannot locate 'Model_Initialize' function in dll %s\n", dllName );
   }  
 
 
 
   modelOutputs= ( ModelOutputs ) GetProcAddress( hDLL, "Model_Outputs" );
   if ( modelOutputs == NULL ) {
-    stopSim( "Cannot locate 'Model_Outputs' function in dll %s\n", buf_dll );    
+    stopSim( "Cannot locate 'Model_Outputs' function in dll %s\n", dllName );    
   }
 
 
