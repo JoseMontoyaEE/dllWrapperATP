@@ -294,12 +294,12 @@ __declspec(dllexport) int32_T __cdecl Model_CheckParameters(IEEE_Cigre_DLLInterf
     ErrorMessage[0] = '\0';
     if (TE < 2.0*delt) {
         // write error message
-        printf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Error - Parameter TE is: %f, but has been reset to be 2 times the time step: %f .\n", TE, delt);
+        snprintf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Error - Parameter TE is: %f, but has been reset to be 2 times the time step: %f .\n", TE, delt);
         parameters->TE = 2.0*delt;
     }
     if (TB < 2.0*delt) {
         // write error message
-        printf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Error - Parameter TB is: %f, but has been reset to be 2 times the time step: %f .\n", TB, delt);
+        snprintf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Error - Parameter TB is: %f, but has been reset to be 2 times the time step: %f .\n", TB, delt);
         parameters->TB = 2.0*delt;
     }
     instance->LastGeneralMessage = ErrorMessage;
@@ -356,7 +356,7 @@ __declspec(dllexport) int32_T __cdecl Model_Initialize(IEEE_Cigre_DLLInterface_I
     ErrorMessage[0] = '\0';
     // test if  initial conditions use negative field logic
     if (IFD < 0.0) {
-        printf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Warning - initial field current: %f is negative.\n", IFD);
+        snprintf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Warning - initial field current: %f is negative.\n", IFD);
     }
 
     // check if bus-fed or independent supply
@@ -367,11 +367,11 @@ __declspec(dllexport) int32_T __cdecl Model_Initialize(IEEE_Cigre_DLLInterface_I
     }
     // test EFD initial condition is on a EMax or EMin limit
     if (OControl < EMin) {
-        printf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Warning - initial field voltage is %f and is < EMin: %f.\n", OControl, EMin);
+        snprintf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Warning - initial field voltage is %f and is < EMin: %f.\n", OControl, EMin);
         OControl = EMin;
     }
     if (OControl > EMax) {
-        printf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Warning - initial field voltage is %f and is > EMax: %f.\n", OControl, EMax);
+        snprintf(ErrorMessage, sizeof(ErrorMessage), "SCRX9 Warning - initial field voltage is %f and is > EMax: %f.\n", OControl, EMax);
         OControl = EMax;
     }
     OLeadLag = OControl / K;

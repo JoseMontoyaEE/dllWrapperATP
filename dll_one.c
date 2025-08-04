@@ -88,7 +88,7 @@ char readDlls( char *dllName, size_t bufferSize  ) {
   if ( pFile != NULL && fgets( dllName, bufferSize, pFile ) != NULL ) {
     dllName[ strcspn( dllName, "\r\n" ) ]= '\0';
   } else {
-    stopSim( "Could not read dll %s from file\n", dllName );
+    stopSim( "Could not read dll from file\n" );
   }
 
   fclose( pFile );
@@ -523,11 +523,11 @@ void dll_one_i__( double xdata_ar[], double xin_ar[], double xout_ar[], double x
 
   int32_T mTerminate;
   ModelTerminate modelTerminate= ( ModelTerminate ) GetProcAddress( hDLL, "Model_Terminate" );
-  if ( modelTerminate != NULL ) {
-    mTerminate= modelTerminate( ptr_toModel );
-    printLIS_( "ModelTerminate: %i\n", mTerminate );
-    showErrorIfAny( mTerminate );
-  } 
+  // if ( modelTerminate != NULL ) {
+  //   mTerminate= modelTerminate( ptr_toModel );
+  //   printLIS_( "ModelTerminate: %i\n", mTerminate );
+  //   showErrorIfAny( mTerminate );
+  // } 
 
   
 
