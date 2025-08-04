@@ -8,7 +8,7 @@ from IEEE_Cigre_DLLInterface_types import *
 
 # Load the DLL
 dll= "scm_32"
-dllFile= f"c:/users/josé montoya/documents/documentos_jm/proyecto wrapper dll atp/ejemplo enlazar dll/create_models__32/{ dll }.dll"  # Add .dll extension explicitly
+dllFile= f"C:/DLL_Files/{ dll }.dll"  # Add .dll extension explicitly
 if not os.path.exists( dllFile ):
   print( f'Cannot find "{ dllFile }"' )
   sys.exit(1)
@@ -89,7 +89,10 @@ for i in range( modelInfo.NumInputPorts ):
 blueprint= f"""
 MODELS { modelName }
   DATA
+    Instance {{ DFLT: 1 }}    -- Instance Number from 'icdll_list.txt' file
+    
     { '\n    '.join( [ defaultParameters( modelInfo, namesParams, i ) for i in range( szP ) ] ) }
+    
     TRelease {{ DFLT: 0 }}
 
   INPUT
@@ -100,31 +103,24 @@ MODELS { modelName }
     { ( ", ".join( namesOutputs ) if szO >= 1 else "" ) }
 
   VAR
-    { ( ", ".join( namesOutputs ) if szO >= 1 else "" ) }
-    { "inputsFromATP" if szI >= 1 else "" }{ ( f"[1..{ szI }]" if szI > 1 else "" ) }, { "paramsFromATP" if szP >= 1 else "" }{ ( f"[1..{ szP }]" if szP > 1 else "" ) }, { "outputsInit" if szO >= 1 else "" }{ ( f"[1..{ szO }]" if szO > 1 else "" ) }
+    { ( ", ".join( namesOutputs ) if szO >= 1 else "" ) }    
 
   INIT
     { '\n    '.join( f"{ i }:= { i }_0" for i in namesInputs ) }
-    { "inputsFromATP" if szI >= 1 else "" }{ ( f"[1..{ szI }]" if szI > 1 else "" ) }:= { ( f"[ { ", ".join( namesInputs ) } ] " if szI > 1 else f"{ namesParams[0] }" ) }
-    { "paramsFromATP" if szP >= 1 else "" }{ ( f"[1..{ szP }]" if szP > 1 else "" ) }:= { ( f"[ { ", ".join( namesParams ) } ] " if szP > 1 else f"{ namesParams[0] }" ) }
-    { "outputsInit" if szO >= 1 else "" }{ ( f"[1..{ szO }]" if szO > 1 else "" ) }:= { ( f"[ { '_0, '.join( namesOutputs ) }_0 ] " if szO > 1 else f"{ namesOutputs[0] }_0" ) }
-
+    
   ENDINIT
 
-  MODEL { modelName }_dll FOREIGN dll_one {{ ixdata: { szP + 2 }, ixin: { szI + szO + 1 }, ixout: { szO }, ixvar: { szIntSt + szFlSt + szDbSt } }}
+  MODEL { modelName }_dll FOREIGN icdll {{ ixdata: { szP + 4 }, ixin: { szI + szO + 1 }, ixout: { szO }, ixvar: { szIntSt + szFlSt + szDbSt } }}
 
   EXEC
 
-    { "inputsFromATP" if szI >= 1 else "" }{ ( f"[1..{ szI }]" if szI > 1 else "" ) }:= { ( f"[ { ", ".join( namesInputs ) } ] " if szI > 1 else f"{ namesParams[0] }" ) }
-    { "outputsInit" if szO >= 1 else "" }{ ( f"[1..{ szO }]" if szO > 1 else "" ) }:= { ( f"[ { '_0, '.join( namesOutputs ) }_0 ] " if szO > 1 else f"{ namesOutputs[0] }_0" ) }
-
-    USE { modelName }_dll AS { modelName }_dll
+    USE { modelName }_dll AS DEFAULT
 
       DATA
-        xdata{ ( f"[1..{ szP + 2 }]" if szP >= 1 else "2" ) }:= [{ ( " paramsFromATP" if szP >= 1 else "" ) }{ ( f"[1..{ szP }]" if szP > 1 else "" ) }{ ( ", " if szP >= 1 else "" ) } timestep, TRelease ]
+        xdata{ ( f"[1..{ szP + 4 }]" if szP >= 1 else "4" ) }:= [ Instance, timestep, stoptime, TRelease, { ( ", ".join( namesParams ) if szI >= 1 else "" ) } ]
 
       INPUT
-        xin{ ( f"[1..{ szI + szO + 1 }]" if ( szI >= 1 or szO >= 1) else "2" ) }:= [{ ( " inputsFromATP" if szI >= 1 else "" ) }{ ( f"[1..{ szI }]" if szI > 1 else "" ) }{ ( ", " if szI >= 1 else "" ) }{ ( " outputsInit" if szO >= 1 else "" ) }{ ( f"[1..{ szO }]" if szO > 1 else "" ) }{ ( ", " if szO >= 1 else "" ) } t ]   
+        xin{ ( f"[1..{ szI + szO + 1 }]" if ( szI >= 1 or szO >= 1) else "2" ) }:= [ t, { ( ", ".join( namesInputs ) if szI >= 1 else "" ) }{ ( ",8 " if szO > 1 else "" ) }{ ( "_0, ".join( namesOutputs ) if szO >= 1 else "" ) }{ "_0" if szO >= 1 else "" } ]   
 
       OUTPUT
         { ( '\n        '.join( f"{ i }:= xout[{ k + 1 }]" for k,i in enumerate( namesOutputs ) ) if szO > 1 else ( f"{ namesOutputs[0] }:= xout" if szO == 1 else "" ) ) }

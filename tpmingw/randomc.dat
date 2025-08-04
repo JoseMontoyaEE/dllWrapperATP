@@ -1,0 +1,63 @@
+BEGIN NEW DATA CASE                                              { RANDOMC.DAT }
+C deltat    tmax    xopt    copt  epsiln  tolmat  tstart
+      1.     10.
+C  print  points  connec     s-s  minmax    vary   again    plot
+      10       1       0       0       0       0       0       0
+C ==============================================================================
+MODELS STAND ALONE
+ comment ------------------------------------------------------------------
+ |   contents of C procedure called when executing model "cseed" and
+ |   "crand" foreign functions
+ |   (as indicated by the user in ATP subroutine fgnmod.for)
+ |
+ |
+ |  
+ |  /*---------------------------------------------------------------*/
+ |  /* These functions would be declared in a model as follows:      */
+ |  /*    FUNCTION seed FOREIGN C_SEED {ixarg: 1}                    */
+ |  /*    FUNCTION rand FOREIGN C_RANDOM {ixarg: 1}                  */
+ |  /*  and the function names would need to be registered           */
+ |  /*  in subroutine fgnfun of ATP's file mod001.for                */
+ |  /*---------------------------------------------------------------*/
+ |  
+ |  double cseed_(void)   /* randomly seeds the C library function rand() */
+ |  {
+ |    srand(time(0));
+ |    return 0;
+ |  }
+ |  
+ |  double crandom_(void)   /* returns a random number between 0 and 1 */
+ |  { return (double)rand()/(double)RAND_MAX;
+ |  }
+ |  MODEL C_random_example   -- uses non-reproducible random sequences
+ |
+  --------------------------------------------------------------- endcomment
+------------------------------------------------------------- Model definitions:
+MODEL C_random_example   -- uses non-reproducible random sequences
+
+ VAR x  -- a model expects at least one variable
+
+ FUNCTION seed FOREIGN c_seed {ixarg:1}   -- user-supplied function
+ FUNCTION rand FOREIGN c_random {ixarg:1} -- user-supplied function
+
+ INIT
+  x:=seed(0)   -- arg is needed, even if unused
+               -- the line can be commented to avoid seed
+               -- the same "random" numbers will be obtained in
+               -- each run 
+ ENDINIT
+
+ EXEC
+  IF t>0 THEN                  -- deactivated at t=0
+   write('rand()=', rand(0))   -- arg is needed, even if unused
+  ENDIF
+ ENDEXEC
+ENDMODEL
+--------------------------------------------------------------- Model instances:
+USE C_random_example AS C_random_example
+ENDUSE
+ENDMODELS
+C ==============================================================================
+BLANK card ending plot requests
+BEGIN NEW DATA CASE
+BLANK

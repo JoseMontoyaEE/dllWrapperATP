@@ -1,0 +1,51 @@
+C NLELEM TO NLELEM.F BY HEVIA
+C NLELEM TO NLELEM.F BY HEVIA
+C NLELEM TO NLELEM.F BY HEVIA
+C NLELEM TO NLELEM.F BY HEVIA
+C NLELEM TO NLELEM.F BY HEVIA
+      SUBROUTINE NLELEM
+      IMPLICIT REAL*8 (A-H, O-Z),  INTEGER*4 (I-N)
+      COMMON  / C0B047 /   CCHAR (    1 )
+      COMMON  / C0B032 /   NONLAD(    1 )
+      COMMON  / C0B048 /   VCHAR (    1 )
+      COMMON  / C0B034 /   VNONL (    1 )
+      COMMON  / C0B108 /   VOLTK (    7 )
+      INCLUDE  'dekspy.ins'
+      INCLUDE  'sixty4.ins'
+      EQUIVALENCE  ( ID4BRK(1), INL )
+      EQUIVALENCE  ( ID4BRK(2),  M2 )
+      EQUIVALENCE  ( ID4BRK(3),  D4 )
+      EQUIVALENCE  ( ID4BRK(5),  D11 )
+      EQUIVALENCE  ( ID4BRK(7),  AZM )
+      IF ( IPRSUP .GT. 4 )  THEN
+      WRITE (LUNIT6, 2914)  NCHAIN, INL, M2
+ 2914 FORMAT ( ' Top of  NLELEM.  NCHAIN, INL, M2 =', 3I8 )
+      WRITE (LUNIT6, *) '                  ISTEP =',  ISTEP
+          ENDIF
+      IF ( NCHAIN .NE. 3 )  GO TO 6237
+      GO TO 9800
+ 6237 ICHMIN = NONLAD(INL)
+      AA = CCHAR(ICHMIN+1)
+      BB = VCHAR(ICHMIN+1)
+      CC = CCHAR(ICHMIN+2)
+      IF ( IPRSUP .GT. 5 )  THEN
+      WRITE (LUNIT6, 5834)  AA, BB, CC
+ 5834 FORMAT ( '               AA, BB, CC =',  1P, 3E14.6  )
+      WRITE (LUNIT6, *) '               D4 =',  D4
+          ENDIF
+      D52 = BB * D4
+      D54 = BB * AA * COSHZ ( D52 ) + CC
+      IF ( IPRSUP .GT. 5 )
+     1 WRITE (LUNIT6, *) '               D52, D54 =',  D52, D54
+      AZM = D54 * DELTA2
+      D11 = AA * SINH ( D52 ) + CC * D4
+      IF ( IPRSUP .GT. 4 )
+     1 WRITE (LUNIT6, 5238)  D11, AZM
+ 5238 FORMAT ( ' Exit NLELEM.  D11, AZM =',  1P, 2E14.6 )
+ 9800 RETURN
+      END
+C NLELEM TO NLELEM.F BY HEVIA
+C NLELEM TO NLELEM.F BY HEVIA
+C NLELEM TO NLELEM.F BY HEVIA
+C NLELEM TO NLELEM.F BY HEVIA
+C NLELEM TO NLELEM.F BY HEVIA

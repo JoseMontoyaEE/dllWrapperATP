@@ -1,0 +1,17 @@
+      INTEGER*8     KPRCHG(12), MULTPR(12)                                      
+      INTEGER*8     ISTEP,  IPLOT,  LIMSTP,  MIMSTP                             
+      INTEGER*8     ISPRIN, ISPLOT, IOUTLP,  NOSTEP,  ISTBEG                    
+      INTEGER*8     MAXIST                                                      
+      EQUIVALENCE  ( PEAKND(131), KPRCHG(1) )                                   
+      EQUIVALENCE  ( PEAKND(143), MULTPR(1) )                                   
+      EQUIVALENCE  ( MONCAR(51),  ISPRIN )                                      
+      EQUIVALENCE  ( MONCAR(81),  IOUTLP )                                      
+      EQUIVALENCE  ( MONCAR(99),  ISTEP  )                                      
+      EQUIVALENCE  ( MONCAR(101), IPLOT  )                                      
+      EQUIVALENCE  ( MONCAR(103), ISPLOT )                                      
+      EQUIVALENCE  ( PEAKND(157), LIMSTP    ),   ( PEAKND(158), MIMSTP )        
+      EQUIVALENCE                                ( PEAKND(162), NOSTEP )        
+      EQUIVALENCE  ( PEAKND(163), ISTBEG    ),   ( PEAKND(164), MAXIST )        
+      INTEGER*8  INTEG8                                                         
+      INTEGER*4  INTEG4(2)                                                      
+      EQUIVALENCE  ( PEAKND(159), INTEG8, INTEG4 )                              

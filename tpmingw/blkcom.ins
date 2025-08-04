@@ -1,0 +1,57 @@
+      COMMON  /COMBLK/  CI1, CK1, T,                                            
+                                                                                
+     1       VOLTBC(91),  DELTAT, DELTA2, EPSILN, FLTINF,                       
+     2       FLZERO, FREQCS, TWOPI, TMAX, OMEGA, FLTINT,                        
+     3       TENM3, TENM6, UNITY, ONEHAF, PEAKND(1700), MONCAS(420),            
+                                                                                
+     4       NENERG, IOFGND, IOFBND, IV, IPUNCH, KOL132,  MOLDAT,               
+     5                                  KTAB, NUMOUT, NUM99, KCONST,            
+     6       KSWTCH, NTOT, IFSEM, INONL, NUMUM, NUMSM, NODA, ITADD,             
+     7       IPRSOV(41),  MONCAR(118), ILINE,       IT1, IT2, NUMSUB,           
+     8       NV, KTRLSW(8), LAST, IALTER, IT, IBR, LOOPSS(13), NC,              
+     9       M4PLOT, NRIGHT, NFRFLD, KWTSPY,                                    
+     +       KOVFNT, KOLBEG, IPRSUP, IPRSPY, MON4TH(9), NUMDCD, KILL,           
+     1       KENFNT(148), JBEGOV(3450), LSTNEW(100),                            
+     2       NCHAIN, LASTOV, IPUN, INTINF, IPRSNO                               
+      EQUIVALENCE     ( MONCAS(69),  LUNIT6 ),   ( MONCAS(73),  LUNT10 )        
+      CHARACTER*6    TEXTA6,  BLANK                                             
+                                                                                
+      CHARACTER   APOSTR*1,  DIGITS*10,  TIME38*38,  ALPHAB*52                  
+      CHARACTER*80   ABUFF,  BLAN80                                             
+      CHARACTER*255  PREFIX                                                     
+      CHARACTER*255  PREFIY                                                     
+      CHARACTER*255  PATH80                                                     
+      CHARACTER*255  PATH30                                                     
+      CHARACTER*1  SLASH                                                        
+      COMMON  /COMJU6/  APOSTR, BLANK, SLASH                                    
+      COMMON  /COMJU6/  TEXTA6(38), DIGITS, TIME38, ALPHAB                      
+                                                                                
+      COMMON  /COMJU6/  ABUFF, BLAN80, PREFIX, PREFIY, PATH80, PATH30           
+                                                                                
+      CHARACTER*6                BUS1,  BUS2,  BUS3,  BUS4,  BUS5,  BUS6        
+      CHARACTER     ANSI*8,   ANSI8*8,  ANSI16*16,  ANSI32*32, SPYCD2*35        
+      CHARACTER*80   BUFF77,  TEXT80,  ALPH80,  PROM80,  CARDIN,  CHLMFS        
+      CHARACTER*400  SLOT1                                                      
+      CHARACTER*132  PSNAME                                                     
+      CHARACTER*132  JUNIT6,  MUNIT6                                            
+      CHARACTER*132  FILENM                                                     
+      CHARACTER*255  SPY132, CIM132                                             
+      CHARACTER*255  NAMCOL                                                     
+      CHARACTER*255  JUNIT6DAT, CHR255                                          
+      COMMON  / CHARNS /      BUS1, BUS2, BUS3, BUS4, BUS5, BUS6                
+      COMMON  / CHARNS /        ANSI,  ANSI8,  ANSI16,   ANSI32,  SPYCD2        
+      COMMON  / CHARNS /      BUFF77,  PROM80,  ALPH80,  TEXT80(15)             
+                                                                                
+      COMMON  / CHARNS /      SLOT1,   JUNIT6,  MUNIT6, PSNAME,  NAMCOL         
+      COMMON  / CHARNS /      CARDIN,  CHLMFS,  JUNIT6DAT,  CHR255              
+      COMMON  / CHARNS /      SPY132,  CIM132,  FILENM                          
+      COMMON  / NUMBNS /    FLSTAT(20),  TIMDOZ,  DIN1,  DIN2,  HMIN            
+      COMMON  / NUMBNS /    HMAX,  VMIN,  VMAX,  HUNPI,  SYSAVE                 
+      COMMON  / NUMBNS /    LSTAT(92),  INDPRT, NEXMOD, NUMTIT, MARTIP          
+      COMMON  / NUMBNS /    KVERFY,           JWORD, JJROLL,  KFILE5            
+      COMMON  / NUMBNS /    MUNIT5,  MONITR,  MONITS, KODWAK, JWL, MXYPL        
+      COMMON  / NUMBNS /    INDADJ,  ICURSE,  LOSLIF,           NAMVAR          
+      COMMON  / NUMBNS /    INTPPL,  NCHSUP,  NCHVER,  MRESTP,  LIMFIX          
+      COMMON  / NUMBNS /    NUMCRV,  NFORSP,  IDOUBL, KWT2ND, NEWPAG            
+      COMMON  / NUMBNS /    JJ,  JSDISK                                         
+      COMMON  / COMPID /    INTPID                                              

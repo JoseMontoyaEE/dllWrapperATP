@@ -1,0 +1,5 @@
+*.o
+makefile.paths
+my_tpgig.exe
+setup_env.bat
+reader_32bit.exe

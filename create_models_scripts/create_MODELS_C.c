@@ -105,41 +105,41 @@ void initSection( char **blueprint,
   
   // Initializing the outpus variables with the output's init values
   int i;
-  for ( i= 0; i < sizeOutputs; i++ ) {
-    sprintf( _init, "    %s:= %s_0 \n", namesOutputs[i], namesOutputs[i] );
-    strcat( outInit, _init );
-  }
+  // for ( i= 0; i < sizeOutputs; i++ ) {
+  //   sprintf( _init, "    %s:= %s_0 \n", namesOutputs[i], namesOutputs[i] );
+  //   strcat( outInit, _init );
+  // }
 
-  // Assigning the inputs values to the 'inputsdFromATP' variable
-  char inputs_init[512];
-  inputs_init[0]= '\0';
+  // // Assigning the inputs values to the 'inputsdFromATP' variable
+  // char inputs_init[512];
+  // inputs_init[0]= '\0';
   
-  for ( i= 0; i < sizeInputs; i++ ) {
-    sprintf( _init, "%s", namesInputs[i] );
-    strcat( inputs_init, _init );
-    if ( i != sizeInputs - 1 ) {
-      strcat( inputs_init, ", " );
-    }
-  }
+  // for ( i= 0; i < sizeInputs; i++ ) {
+  //   sprintf( _init, "%s", namesInputs[i] );
+  //   strcat( inputs_init, _init );
+  //   if ( i != sizeInputs - 1 ) {
+  //     strcat( inputs_init, ", " );
+  //   }
+  // }
   
-  sprintf( _init, ( sizeInputs > 1 ? "    %s:= [ %s ]\n": "    %s:= %s\n" ), inputsFromATP, inputs_init );
-  strcat( outInit, _init );
+  // sprintf( _init, ( sizeInputs > 1 ? "    %s:= [ %s ]\n": "    %s:= %s\n" ), inputsFromATP, inputs_init );
+  // strcat( outInit, _init );
 
 
-  // Assigning the parameters values to the 'paramsFromATP' variable
-  char params_init[512];
-  params_init[0]= '\0';
+  // // Assigning the parameters values to the 'paramsFromATP' variable
+  // char params_init[512];
+  // params_init[0]= '\0';
 
-  for ( i= 0; i < sizeParams; i++ ) {
-    sprintf( _init, "%s", namesParams[i] );
-    strcat( params_init, _init );
-    if ( i != sizeParams - 1 ) {
-      strcat( params_init, ", " );
-    }
-  }
+  // for ( i= 0; i < sizeParams; i++ ) {
+  //   sprintf( _init, "%s", namesParams[i] );
+  //   strcat( params_init, _init );
+  //   if ( i != sizeParams - 1 ) {
+  //     strcat( params_init, ", " );
+  //   }
+  // }
 
-  sprintf( _init, ( sizeParams > 1 ? "    %s:= [ %s ]\n": "    %s:= %s\n" ), paramsFromATP, params_init );
-  strcat( outInit, _init );
+  // sprintf( _init, ( sizeParams > 1 ? "    %s:= [ %s ]\n": "    %s:= %s\n" ), paramsFromATP, params_init );
+  // strcat( outInit, _init );
 
 
   // Assigning the outputs values to the 'outputsInit' variable
@@ -147,17 +147,17 @@ void initSection( char **blueprint,
   outputs_init[0]= '\0';
 
   for ( i= 0; i < sizeOutputs; i++ ) {
-    sprintf( _init, "%s_0", namesOutputs[i] );
+    sprintf( _init, "    %s:= %s_0 \n", namesOutputs[i], namesOutputs[i] );
     strcat( outputs_init, _init );
-    if ( i != sizeOutputs - 1 ) {
-      strcat( outputs_init, ", " );
-    }
+    // if ( i != sizeParams - 1 ) {
+    //   strcat( outputs_init, ", " );
+    // }
   }
 
-  sprintf( _init, ( sizeOutputs > 1 ? "    %s:= [ %s ]\n": "    %s:= %s\n" ), outputsInit, outputs_init );
-  strcat( outInit, _init );
+  // sprintf( _init, ( sizeOutputs > 1 ? "    %s:= [ %s ]\n": "    %s:= %s\n" ), outputsInit, outputs_init );
+  // strcat( outInit, _init );
   
-  strcat( *blueprint, outInit );  
+  strcat( *blueprint, outputs_init );  
   strcat( *blueprint, "\n" );
   strcat( *blueprint, "  ENDINIT\n\n" );
   
@@ -170,7 +170,7 @@ void fgnSection( char **blueprint, const char *modelName, int sizeInputs, int si
   char *fgnSec= malloc( 512 );
   fgnSec[0]= '\0';
 
-  sprintf( fgnSec, "MODEL %s_dll FOREIGN dll_one { ixdata: %i, ixin: %i, ixout: %i, ixvar: %i }\n", modelName, ( sizeParams + 2 ), ( sizeInputs + 2 ), sizeOutputs, ( sizeNumIntStates + sizeNumFloatStates + sizeNumDoubleStates ) );
+  sprintf( fgnSec, "MODEL %s_dll FOREIGN icdll { ixdata: %i, ixin: %i, ixout: %i, ixvar: %i }\n", modelName, ( sizeParams + 4 ), ( sizeInputs + sizeOutputs + 1 ), sizeOutputs, ( sizeNumIntStates + sizeNumFloatStates + sizeNumDoubleStates ) );
   appendSection( blueprint, 0, ( const char ** )&fgnSec, 1 );   
 
   free( fgnSec );
@@ -197,48 +197,71 @@ void execSection( char **blueprint,
   char exec_aux[512];
   exec_sec[0]= '\0';
   
+  // Assigning the outputs values to the 'inputsFromATP' variable
   int i;
-  for ( i= 0; i < sizeInputs; i++ ) {
-    sprintf( exec_aux, "%s", namesInputs[i] );
-    strcat( exec_sec, exec_aux );
-    if ( i != sizeInputs - 1 ) {
-      strcat( exec_sec, ", " );
-    }
-  }
+  // for ( i= 0; i < sizeInputs; i++ ) {
+  //   sprintf( exec_aux, "%s", namesInputs[i] );
+  //   strcat( exec_sec, exec_aux );
+  //   if ( i != sizeInputs - 1 ) {
+  //     strcat( exec_sec, ", " );
+  //   }
+  // }
   
-  sprintf( exec_aux, ( sizeInputs > 1 ? "    %s:= [ %s ]\n": "    %s:= %s\n" ), inputsFromATP, exec_sec );
-  strcat( execSec, exec_aux );
+  // sprintf( exec_aux, ( sizeInputs > 1 ? "    %s:= [ %s ]\n": "    %s:= %s\n" ), inputsFromATP, exec_sec );
+  // strcat( execSec, exec_aux );
 
 
-  // Assigning the outputs values to the 'outputsInit' variable
-  exec_sec[0]= '\0';
-  for ( i= 0; i < sizeOutputs; i++ ) {
-    sprintf( exec_aux, "%s", namesOutputs[i] );
-    strcat( exec_sec, exec_aux );
-    if ( i != sizeOutputs - 1 ) {
-      strcat( exec_sec, ", " );
-    }
-  }
+  // // Assigning the outputs values to the 'outputsInit' variable
+  // exec_sec[0]= '\0';
+  // for ( i= 0; i < sizeOutputs; i++ ) {
+  //   sprintf( exec_aux, "%s", namesOutputs[i] );
+  //   strcat( exec_sec, exec_aux );
+  //   if ( i != sizeOutputs - 1 ) {
+  //     strcat( exec_sec, ", " );
+  //   }
+  // }
 
-  sprintf( exec_aux, ( sizeOutputs > 1 ? "    %s:= [ %s_0 ]\n": "    %s:= %s_0\n" ), outputsInit, exec_sec );
-  strcat( execSec, exec_aux );
+  // sprintf( exec_aux, ( sizeOutputs > 1 ? "    %s:= [ %s_0 ]\n": "    %s:= %s_0\n" ), outputsInit, exec_sec );
+  // strcat( execSec, exec_aux );
 
 
   // USE
   exec_sec[0]= '\0';
   exec_aux[0]= '\0';
-  sprintf( exec_sec, "\n    USE %s_dll AS %s_dll\n\n", modelName, modelName );
+  sprintf( exec_sec, "    USE %s_dll AS DEFAULT\n\n", modelName );
   strcat( execSec, exec_sec );
 
     // DATA
   strcat( execSec, "      DATA\n" );
-  sprintf( exec_sec, "        xdata[1..%i]:= [ %s, timestep, TRelease ]\n\n", ( sizeParams > 1 ? ( sizeParams + 2 ) : 3 ), paramsFromATP );
-  strcat( execSec, exec_sec );
+  exec_sec[0]= '\0';
+
+  for ( i= 0; i < sizeParams; i++ ) {
+    sprintf( exec_aux, "%s", namesParams[i] );
+    if ( i != sizeParams - 1 ) strcat( exec_aux, ", " );
+    strcat( exec_sec, exec_aux );
+  }
+
+  sprintf( exec_aux, "        xdata[1..%i]:= [ Instance, timestep, stoptime, TRelease, %s ]\n\n", ( sizeParams > 1 ? ( sizeParams + 4 ) : 4 ), exec_sec );
+  strcat( execSec, exec_aux );
 
     // INPUT
+  exec_sec[0]= '\0';
+
+  for ( i= 0; i < sizeInputs; i++ ) {
+    sprintf( exec_aux, "%s, ", namesInputs[i] );
+    if ( i != sizeInputs - 1 && sizeOutputs > 1 ) strcat( exec_aux, ", " );
+    strcat( exec_sec, exec_aux );
+  }
+
+  for ( i= 0; i < sizeOutputs; i++ ) {
+    sprintf( exec_aux, "%s", namesOutputs[i] );
+    if ( i != sizeOutputs - 1 ) strcat( exec_aux, ", " );
+    strcat( exec_sec, exec_aux );
+  }
+  
   strcat( execSec, "      INPUT\n" );
-  sprintf( exec_sec, "        xin[1..%i]:= [ %s, %s, t ]\n\n", ( sizeInputs > 1 ? ( sizeInputs + sizeOutputs + 1 ) : 1 ), inputsFromATP, outputsInit );
-  strcat( execSec, exec_sec );
+  sprintf( exec_aux, "        xin[1..%i]:= [ t, %s ]\n\n", ( sizeInputs + sizeOutputs + 1 ), exec_sec );                   // ( sizeInputs >= 1 ? ( sizeOutputs >= 1 ? ( sizeInputs + sizeOutputs + 1 ) : ( sizeInputs + 1 ) ) : ( sizeOutputs >= 1 ? ( sizeOutputs + 1 ) : 1 ) )
+  strcat( execSec, exec_aux );
 
     // OUTPUT
   strcat( execSec, "      OUTPUT\n" );
@@ -377,14 +400,15 @@ char* modelBlueprint( IEEE_Cigre_DLLInterface_Model_Info *modelInfo ) {
   strcat( blueprint, "\n" );
 
   // DATA
-  strcat( blueprint, "  DATA\n" );
+  strcat( blueprint, "  DATA\n" );  
+  strcat( blueprint, "    Instance { DFLT: 1 }     -- Instance Number from 'icdll_list.txt' file\n\n" );
 
   char *dfltPrmSec= malloc( 4096 );
   dfltPrmSec[0]= '\0';
 
   defaultParameters( modelInfo, sizeParams, dfltPrmSec );
   strcat( blueprint, dfltPrmSec );
-  strcat( blueprint, "    TRelease { DFLT: 0 }\n" );
+  strcat( blueprint, "\n    TRelease { DFLT: 0 }\n" );
   strcat( blueprint, "\n" );
 
   // INPUTS
@@ -397,35 +421,36 @@ char* modelBlueprint( IEEE_Cigre_DLLInterface_Model_Info *modelInfo ) {
   
   // VAR
   appendSection( &blueprint, "  VAR", namesOutputs, sizeOutputs );
+  strcat( blueprint, "\n" );
   
-  char *varLine= malloc( 1024 );
-  varLine[0]= '\0';
+  // char *varLine= malloc( 1024 );
+  // varLine[0]= '\0';
 
   char inputsFromATP[512];
   char paramsFromATP[512];
   char outputsInit[512];
-  char var_line[512];
+  // char var_line[512];
   
-  strcpy( inputsFromATP, "inputsFromATP" );
-  if ( sizeInputs > 1 ) {
-    sprintf( var_line, "[1..%i]", sizeInputs );
-    strcat( inputsFromATP, var_line );
-  }
+  // strcpy( inputsFromATP, "inputsFromATP" );
+  // if ( sizeInputs > 1 ) {
+  //   sprintf( var_line, "[1..%i]", sizeInputs );
+  //   strcat( inputsFromATP, var_line );
+  // }
 
-  strcpy( paramsFromATP, "paramsFromATP" );
-  if ( sizeParams > 1 ) {
-    sprintf( var_line, "[1..%i]", sizeParams );
-    strcat( paramsFromATP, var_line );
-  }
+  // strcpy( paramsFromATP, "paramsFromATP" );
+  // if ( sizeParams > 1 ) {
+  //   sprintf( var_line, "[1..%i]", sizeParams );
+  //   strcat( paramsFromATP, var_line );
+  // }
   
-  strcpy( outputsInit, "outputsInit" );
-  if ( sizeOutputs > 1 ) {
-    sprintf( var_line, "[1..%i]", sizeOutputs );
-    strcat( outputsInit, var_line );
-  }
+  // strcpy( outputsInit, "outputsInit" );
+  // if ( sizeOutputs > 1 ) {
+  //   sprintf( var_line, "[1..%i]", sizeOutputs );
+  //   strcat( outputsInit, var_line );
+  // }
 
-  sprintf( varLine, "  %s, %s, %s\n", inputsFromATP, paramsFromATP, outputsInit );  
-  appendSection( &blueprint, 0, ( const char ** )&varLine, 1 );
+  // sprintf( varLine, "  %s, %s, %s\n", inputsFromATP, paramsFromATP, outputsInit );  
+  // appendSection( &blueprint, 0, ( const char ** )&varLine, 1 );
 
   // INIT
   initSection( &blueprint, sizeInputs, namesInputs, sizeOutputs, namesOutputs, sizeParams, namesParams, inputsFromATP, paramsFromATP, outputsInit );
@@ -463,7 +488,9 @@ void exportToFile( const char *filename, const char *blueprint ) {
 
 int main() {
 
-  char *dllFile= "scm_32";                             // scm_32   realCodeExample  
+  char *dllFile= "scm_32";                             // scm_32   realCodeExample   ESAC8B
+
+
   int i;
 
   FILE *pFile= fopen( "dll_list.txt", "r" );

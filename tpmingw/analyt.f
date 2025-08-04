@@ -1,0 +1,82 @@
+C ANALYT TO ANALYT,F BY HEVIA
+C ANALYT TO ANALYT,F BY HEVIA
+C ANALYT TO ANALYT,F BY HEVIA
+C ANALYT TO ANALYT,F BY HEVIA
+C ANALYT TO ANALYT,F BY HEVIA
+      SUBROUTINE ANALYT
+      IMPLICIT REAL*8 (A-H, O-Z),  INTEGER*4 (I-N)
+      INCLUDE  'dekspy.ins'
+      COMMON  / C0B055 /   NR    (    1 )
+      COMMON  / C0B071 /   SPUM  (    1 )
+      EQUIVALENCE  ( PEAKND(41), TMINRP ),     ( PEAKND(42), TMAXRP )
+      EQUIVALENCE     ( MONCAS(95),  KSERLC ),   ( MONCAS(101), NUMRMP )
+      EQUIVALENCE     ( MONCAS(149), IOFRMP )
+      EQUIVALENCE                  ( MONCAR(40),  KANAL )
+      DATA  N16  /  0  /
+      ABSZ(XS)     = DABS(XS)
+ 1637 IF ( IPRSUP  .GE.  1 )
+     1 WRITE (LUNIT6, 1641)  NUMRMP, NTOT, IOFRMP, TMINRP, TMAXRP
+ 1641 FORMAT ( ' Top of "ANALYT".  NUMRMP, NTOT, IOFRMP =',  3I6,
+     1         '    TMINRP, TMAXRP =',  2E15.6 )
+      IF ( NUMRMP .LE. 0 )  GO TO 1847
+      IF ( T .LT. TMINRP  .OR.
+     1     T .GT. TMAXRP + DELTAT )  GO TO 1830
+      N5 = IOFRMP
+      DO 1762  J=1, NUMRMP
+      IF ( T .LT. SPUM(N5+1) .OR.
+     1     T .GT. SPUM(N5+2) + DELTAT ) GO TO 1762
+      IF ( SPUM(N5+3) .NE. 1. ) GO TO 1656
+      KSERLC = 1
+      N17 = SPUM(N5+4)
+      NR(N17) =1
+      IF ( IPRSUP .GE. 1 )
+     1 WRITE (LUNIT6, 1674)  J, N17
+ 1674 FORMAT ( ' "ANALYT",  R-L-C ramp.   J, N17 =', 2I5 )
+      D6 = SPUM(N5+5) + SPUM(N5+6) * T
+      IF ( T .LT. SPUM(N5+2)-DELTAT ) GO TO 1758
+      D6 = SPUM(N5+8)
+      GO TO 1758
+ 1656 D6 = SPUM(N5+5) + SPUM(N5+6) * T
+      IF ( T .GT. SPUM(N5+2) ) D6 = SPUM(N5+8)
+ 1758 N4 = SPUM(N5+9)
+      IF ( SPUM(N5+10) .NE. 0.0 ) GO TO 1748
+      call rel_real8_store ( moncar(1), n4, d6 )
+      GO TO 1753
+ 1748 call rel_real8_store ( moncar(2), n4, d6 )
+ 1753 IF ( IPRSPY .GE. 1 )
+     1 WRITE (LUNIT6, 1756) J, N4, T, D6
+ 1756 FORMAT ( ' Done ANALYT ramp.  J, N4, T, D6 =',  2I8,  2E15.6  )
+ 1762 N5 = N5 + 12
+ 1830 IF ( IPRSPY .GT. 0 )
+     1 WRITE (LUNIT6, 1833)  T, TMINRP, TMAXRP
+ 1833 FORMAT ( ' Done  "ANALYT".   T, TMINRP, TMAXRP =',   3E18.9  )
+      GO TO 9800
+ 1847 IF ( KANAL .NE. 2 )  GO TO 1942
+      IF ( N16 .EQ. 5678 )  GO TO 9800
+      D6 = RMPCHG ( D5, D5 )
+      IF ( D6 .EQ. 0.0 )  GO TO 1637
+      N16 = 5678
+      GO TO 9800
+ 1942 IF ( KANAL .EQ. 0) GO TO 9800
+      IF ( NTOT .NE. 8  .OR.
+     1     IBR .NE. 7 )  GO TO 8613
+      D1 = DELTAT - 1.D-1
+      IF ( ABSZ ( D1 ) .GT. TENM6 ) GO TO 8613
+      IF ( VOLTBC(1) .NE. 0.0 ) GO TO 9800
+      D1 = T - 0.25
+      VOLTBC(1) = 100.0 - 100.0 * D1
+      IF ( T .GT. 0.75 ) VOLTBC(1) = 0.0
+      GO TO 9800
+ 8613 KILL = 101
+      LSTAT(19) = 8613
+      ENTRY DEPEND
+ 9800 IF ( IPRSUP  .GE.  1 )
+     1 WRITE (LUNIT6, 9814)  NTOT, IBR, NUMRMP, KILL
+ 9814 FORMAT ( ' Exit ANALYT.   NTOT, IBR, NUMRMP, KILL =',  4I8  )
+      RETURN
+      END
+C ANALYT TO ANALYT,F BY HEVIA
+C ANALYT TO ANALYT,F BY HEVIA
+C ANALYT TO ANALYT,F BY HEVIA
+C ANALYT TO ANALYT,F BY HEVIA
+C ANALYT TO ANALYT,F BY HEVIA

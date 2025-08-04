@@ -1,0 +1,56 @@
+BEGIN NEW DATA CASE                                                 { CFUN.DAT }
+C deltat    tmax    xopt    copt  epsiln  tolmat  tstart
+      1.      5.
+C  print  points  connec     s-s  minmax    vary   again    plot
+      10       1       0       0       0       0       0       0
+C ==============================================================================
+MODELS STAND ALONE
+------------------------------------------------------------- Model definitions:
+MODEL cfun    -- illustrates foreign C functions in MODELS
+ VAR y[1..2], k
+
+ FUNCTION f1 FOREIGN sample_c_function {ixarg:2}
+
+ comment ----------------------------------------------------------
+ | * cfun is the C function called when executing function "sample_c_function"
+ |   (as indicated by the user in ATP subroutine fgnmod.for)
+ |
+ | * function cfun() has two output values
+ |      arg[0]: sum of its 2 input args
+ |      arg[1]: 10* output argument #0
+ | * and it returns the number of output values placed in arg[]
+ | * it is a separate C function, linked directly to ATP
+ |
+ | * contents:
+ |    double cfun_(double arg[])
+ |    { arg[0] = arg[0] + arg[1];
+ |      arg[1] = 10 * arg[0];
+ |      return 2;
+ |    }
+ |
+ | * depending on the available compiler and linker, it can also
+ |    be written in languages other than C
+ |
+ | * you may modify ATP file fgnmod.for in order to connect
+ |    additional user-defined foreign functions
+  ------------------------------------------------------ endcomment
+
+ INIT
+  y[1..2]:=0
+ ENDINIT
+
+ EXEC
+  k:=10*y[1]    -- any value here, doesn't matter
+  y[1..2]:=f1(k+t, -k)      -- each argument can be an arbitrary expression
+                            -- here, f1 returns the values k+t-k=t, and 10*t
+  write(t, " : ", y[1],"  ", 10*t, " : ", y[2])
+ ENDEXEC
+ENDMODEL
+--------------------------------------------------------------- Model instances:
+USE cfun AS cfun
+ENDUSE
+ENDMODELS
+C ==============================================================================
+BLANK card ending plot requests
+BEGIN NEW DATA CASE
+BLANK

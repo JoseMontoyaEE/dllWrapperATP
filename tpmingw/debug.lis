@@ -1,0 +1,6 @@
+  Before modify,  MTOT = 104820961
+  LSTNEW(1) = 100002
+  LSTNEW(7) = 200000
+  After  modify,  MTOT = 99420960
+  B4 modify, LSTNEW(29) = 1200
+     modify, LSTNEW(29) = 99420960

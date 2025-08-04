@@ -1,0 +1,2 @@
+$verbose=1
+10;../dlls/scm_Photon.dll

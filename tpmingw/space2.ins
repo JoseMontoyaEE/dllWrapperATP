@@ -1,0 +1,28 @@
+      COMMON  /SPAC02/   NORDER(1)                                              
+      COMMON  /SPAC03/   JINDEX(1)                                              
+      COMMON  /SPAC04/   DIAG  (1)                                              
+      DIMENSION                               ICH2(1)                           
+      EQUIVALENCE                (   DIAG(1), ICH2(1)  )                        
+      COMMON  /SPAC05/   DIAB  (1)                                              
+      DIMENSION                               LOC(1)                            
+      EQUIVALENCE                (   DIAB(1), LOC(1)  )                         
+      COMMON  /SPAC06/   SOLR  (1)                                              
+      DIMENSION                                KOWNT(1)                         
+      EQUIVALENCE                (   SOLR(1),  KOWNT(1)  )                      
+      COMMON  /SPAC07/   SOLI  (1)                                              
+      COMMON  /SPAC08/   ICH1  (1)                                              
+      COMMON  /SPAC09/   BND   (1)                                              
+      DIMENSION                              KORDER(1)                          
+      EQUIVALENCE                (   BND(1), KORDER(1)  )                       
+CCCC  EQUIVALENCE  / X(1)    , 23 /  ILOC(1) .                                  
+      COMMON  /SPAC10/   ILOC  (1)                                              
+CCC   EQUIVALENCE  / X(1)    , 23 /  GND(1), KOLUM(1),                          
+CCC  1 FRANDN(1), IRANDN(1) .                                                   
+CCC    Preceding was simplified  22 Jan 2000  in order to provide easier        
+CCC    handling by the F95 translator.  Since FRANDN and IRANDN are used        
+CCC    only by OVER12,  these variables are exported there.  That leaves        
+CCC    EQUIVALENCE  use with just one or 2 variables & no continuation.         
+      COMMON  /SPAC11/   GND   (1)                                              
+      DIMENSION                              KOLUM(1)                           
+      EQUIVALENCE                (   GND(1), KOLUM(1)  )                        
+C     COMMON  /  KMPHAS,   2  )                                                 
